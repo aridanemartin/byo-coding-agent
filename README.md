@@ -203,6 +203,10 @@ In rough order of difficulty:
 
 Each one is a worthwhile next chapter.
 
+## The journey — read it as a book
+
+[`follow_along/`](follow_along/README.md) contains 14 chapter-length markdown files telling the *why* of every layer in the harness, in the order it was built. Start at [`follow_along/00-introduction.md`](follow_along/00-introduction.md) and read in order — about an hour total.
+
 ## Acknowledgments
 
 The structure draws on architectural decisions visible in Claude Code, OpenCode, and Aider. The "build your own X" framing comes from *Build Your Own Redis*, *Crafting Interpreters*, and Thorsten Ball's *Writing An Interpreter In Go*.

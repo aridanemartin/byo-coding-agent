@@ -203,6 +203,10 @@ En orden aproximado de dificultad:
 
 Cada uno es un capítulo siguiente válido.
 
+## El viaje — léelo como un libro
+
+[`follow_along/`](follow_along/README.md) contiene 14 archivos markdown del tamaño de capítulos que cuentan el *por qué* de cada capa del harness, en el orden en que se construyó (en inglés). Empieza por [`follow_along/00-introduction.md`](follow_along/00-introduction.md) y lee en orden — alrededor de una hora en total.
+
 ## Reconocimientos
 
 La estructura toma decisiones arquitectónicas visibles en Claude Code, OpenCode y Aider. El marco "build your own X" viene de proyectos como *Build Your Own Redis*, *Crafting Interpreters* y *Writing An Interpreter In Go* de Thorsten Ball.
