@@ -120,6 +120,8 @@ func (p *AnthropicProvider) Send(ctx context.Context, messages []Message, tools 
 
 The whole file is ~120 lines. **It is the only place in the harness that imports `anthropic-sdk-go`.** That's the test for whether the abstraction is real: if SDK types leak elsewhere, you haven't abstracted anything.
 
+> **In the current repo.** The interface lives in [`internal/provider/provider.go`](../internal/provider/provider.go) (15 lines, no imports beyond `context` and our own `internal/api`). The Anthropic adapter is [`internal/provider/anthropic.go`](../internal/provider/anthropic.go). The shared generic types — `Message`, `Block`, `ToolDef`, `Response` — live in [`internal/api/types.go`](../internal/api/types.go). Three files; each one is small; each one has a single responsibility.
+
 ## What this earns you
 
 Three concrete wins, in order of obviousness:

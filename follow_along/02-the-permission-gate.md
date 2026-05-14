@@ -89,6 +89,20 @@ A `policy.Decide(name, input) → allow | deny | ask` would replace the inline `
 
 **The hidden assumption: the user is at the keyboard.** In a non-interactive context (CI, scripted tests) the prompt would hang waiting for input. We don't handle that here. A real production version would auto-deny when stdin isn't a TTY.
 
+> **In the current repo.** `executeTool` in [`main.go`](../main.go) is the wrapper:
+>
+> ```go
+> func executeTool(name, rawInput string) (string, bool) {
+>     fmt.Printf("[tool] %s %s\n", name, rawInput)
+>     if !ui.Confirm("approve?") {
+>         return "user denied this tool call", true
+>     }
+>     return registry.Execute(ctx, name, rawInput)
+> }
+> ```
+>
+> The `confirm` function evolved from a simple `bufio.Scanner` read into a Bubble Tea state transition — chapter 12 covers how. The `is_error: true` contract didn't change.
+
 ## Now try
 
 1. Ask the agent to do something destructive (`delete all the .log files in the current directory`). Approve. Note what it actually ran.

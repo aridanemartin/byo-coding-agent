@@ -109,6 +109,8 @@ The spinner runs only during the API call. As soon as the response is back, it's
 
 **Unicode width.** Some terminals don't render `█` and braille at 1-cell width. On macOS Terminal.app, fine. On a few minimalist terminals (early `kitty` setups, some `tmux` configurations), the banner can wrap. There's no perfect fix; we accept it.
 
+> **In the current repo.** Banner code (with both the wide ANSI Shadow variant and the narrow-terminal fallback) is in [`internal/ui/banner.go`](../internal/ui/banner.go). The stand-alone spinner — used in REPL mode before the TUI took over — is [`internal/ui/spinner.go`](../internal/ui/spinner.go). The TUI version (chapter 12) uses `bubbles/spinner` instead; both files survive in the repo so you can compare the two approaches.
+
 ## Now try
 
 1. Resize your terminal to 60 columns wide. Restart the harness. Confirm the fallback banner kicks in.

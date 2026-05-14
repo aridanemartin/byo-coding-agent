@@ -98,6 +98,36 @@ The second branch is where the **loop** comes in. When the model asks for a tool
 3. Sends the now-longer conversation back to the model.
 4. Model sees the result and decides what to do next — answer, or call another tool.
 
+> **What a tool actually looks like in the repo.** Here's the live `read_file` tool — [`internal/tool/readfile.go`](../internal/tool/readfile.go) in this codebase:
+>
+> ```go
+> type ReadFileTool struct{}
+>
+> func (ReadFileTool) Definition() api.ToolDef {
+>     return api.ToolDef{
+>         Name:        "read_file",
+>         Description: "Read the contents of a file at the given path.",
+>         InputSchema: map[string]any{
+>             "path": map[string]any{
+>                 "type":        "string",
+>                 "description": "Path to the file to read.",
+>             },
+>         },
+>         Required: []string{"path"},
+>     }
+> }
+>
+> func (ReadFileTool) Execute(_ context.Context, rawInput string) (string, bool) {
+>     var in struct{ Path string `json:"path"` }
+>     json.Unmarshal([]byte(rawInput), &in)
+>     data, err := os.ReadFile(in.Path)
+>     if err != nil { return err.Error(), true }
+>     return string(data), false
+> }
+> ```
+>
+> A struct implementing two methods. `Definition` returns the schema the model sees. `Execute` does the work and returns `(result string, isError bool)`. Chapter 09 covers why tools end up in this shape; the rest of this chapter shows a simpler precursor where all three tools are dispatched by a switch statement.
+
 That last step is recursive in spirit but iterative in code. A single user message might trigger one model call ("Paris.") or twenty (read three files, run two bash commands, then finally synthesize an answer). The model picks; the harness obeys. We keep looping as long as the model keeps asking for tools, and we stop the moment it returns plain text.
 
 ### Putting it together
@@ -236,6 +266,8 @@ Three things worth pointing out:
 **Tool result IDs.** Every `tool_use` block has an `id`; every `tool_result` you send back must reference that id via `tool_use_id`. If they don't match, the API returns a 400 about an orphaned tool result. The SDK's `NewToolResultBlock(id, content, isErr)` builds the block for you.
 
 **Loop termination.** If you check the wrong field (e.g., `stop_reason == "end_turn"` instead of `!= "tool_use"`), you'll either loop forever or never loop at all. The reliable check is "did the response contain any `tool_use` blocks?" — equivalent to `stop_reason == "tool_use"`.
+
+> **In the current repo.** The agent loop lives in [`internal/agent/agent.go`](../internal/agent/agent.go) as the `(*Agent).loop` method (chapter 11 covers why it became a method on a struct). The `executeTool` wrapper at the harness layer is in [`main.go`](../main.go). The single-switch dispatch shown above evolved into a `tool.Registry` — chapter 09 covers that refactor.
 
 ## Now try
 

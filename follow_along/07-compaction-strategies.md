@@ -139,6 +139,16 @@ This is BYO-shaped: you can interactively probe how each strategy affects the sa
 
 **Compaction breaking the prompt cache.** If you turn on prompt caching (we don't, but you might), every compaction event invalidates the cache for that prefix — the prefix bytes just changed. Sliding window and summarization both rewrite the prefix. Cache lifetime gets capped at "time between compactions."
 
+> **In the current repo.** Everything compaction-related lives in [`internal/compact/`](../internal/compact/):
+>
+> - [`strategy.go`](../internal/compact/strategy.go) — the `CompactionStrategy` interface + `SafeSplitPoint`
+> - [`nocompaction.go`](../internal/compact/nocompaction.go) — the no-op default
+> - [`slidingwindow.go`](../internal/compact/slidingwindow.go) — drops oldest
+> - [`summarize.go`](../internal/compact/summarize.go) — model-driven summarization
+> - [`logging.go`](../internal/compact/logging.go) — the `WithLogging(inner, path)` decorator
+>
+> One file per strategy, one interface they all implement. Adding a new one (e.g. the `TokenBudget` exercise below) is one new file + one line in `main.go` to opt in.
+
 ## Now try
 
 1. Run the harness, have a 15+ turn conversation, then `/compact sliding` and `/compact summarize` back-to-back. Compare the resulting `messages` (use `/verbose on` first).

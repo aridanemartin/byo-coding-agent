@@ -117,6 +117,17 @@ We did **not** create subpackages within `internal/provider/anthropic/` or `inte
 
 The deeper nesting would have been more "idiomatic" in some senses but would have killed the self-registration trick (every subpackage would need its own import in `main`). The flatter layout preserves "drop a file in, it appears."
 
+> **In the current repo.** The layout in this chapter is exactly what's at HEAD. Walk it from the top:
+>
+> - [`main.go`](../main.go) + [`commands.go`](../commands.go) + [`delegate.go`](../delegate.go) — the wiring layer
+> - [`internal/api/`](../internal/api/) — shared types, no internal dependencies
+> - [`internal/provider/`](../internal/provider/) — Provider interface + Anthropic impl
+> - [`internal/tool/`](../internal/tool/) — Tool interface + registry + each tool
+> - [`internal/compact/`](../internal/compact/) — strategies + decorator
+> - [`internal/agent/`](../internal/agent/) — the agent struct (added in chapter 11)
+> - [`internal/subagent/`](../internal/subagent/) — subagent abstraction (chapter 11)
+> - [`internal/ui/`](../internal/ui/) — banner, spinner, Bubble Tea program (chapter 12)
+
 ## Now try
 
 1. Pretend you're a new reader. Without looking at `main.go`, navigate the repo and try to write down: where does the agent loop live? Where do tools live? Where does the API translation happen? If the structure is clear, you should answer in under a minute.

@@ -141,6 +141,8 @@ The `usage` field is for commands that take args. `/model` displays as `/model [
 
 **Where do commands live in package terms?** We left them in `main.go` (well, `commands.go` in the same package as `main`) intentionally. Commands touch *every* extension point — provider, messages, tools, compaction. Putting them in their own package would require either passing all state through, or making everything global *and* exported. Better to keep the integration layer at the top.
 
+> **In the current repo.** All commands live in [`commands.go`](../commands.go). The registry pattern (a `map[string]command`, a `runCommand` dispatcher, one `cmdX` function per command) is unchanged from this chapter. By chapter 11 we've added `/compact`, `/verbose`, `/subagents`; each one is one new entry in `init()` and one new `cmdX` function. The shape scales linearly.
+
 ## Now try
 
 1. Add a `/quit` command as an alias for `/exit`. The naive approach is duplicating the entry; a cleaner approach is making aliases first-class. Which feels right?

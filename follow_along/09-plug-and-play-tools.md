@@ -149,6 +149,13 @@ for _, n := range names {
 
 **Auto-registration vs explicit registration.** `init()` works great for tools that are pure types (no configuration needed). For tools that need a `Provider`, a `Config`, or any other runtime dependency, you can't auto-register — you need an explicit `registry.Register(&MyTool{Provider: llm})` in `main`. We hit this with subagents in chapter 11.
 
+> **In the current repo.** Everything tool-related lives in [`internal/tool/`](../internal/tool/):
+>
+> - [`registry.go`](../internal/tool/registry.go) — the `Tool` interface, `Registry` struct, and the global `Default` registry
+> - [`bash.go`](../internal/tool/bash.go), [`readfile.go`](../internal/tool/readfile.go), [`writefile.go`](../internal/tool/writefile.go) — one file per tool, each with a 1-line `init()` that registers itself
+>
+> The agent loop in [`internal/agent/agent.go`](../internal/agent/agent.go) calls `a.Tools.Definitions()` for the API request and `a.Tools.Execute(ctx, name, input)` for dispatch. It doesn't know which tools exist — that's the whole point.
+
 ## Now try
 
 1. Add a `web_fetch` tool that takes a URL and returns the response body. (Use `net/http`. Set a timeout.)

@@ -126,6 +126,8 @@ In Bubble Tea mode, same idea — confirm runs another `tea.NewProgram`. By chap
 
 **Up/down ambiguity with multi-line input.** Once you have a textarea (vs textinput), arrow keys mean "move within text," not "navigate history." The standard fix is Ctrl-P / Ctrl-N for history (Emacs convention) and reserve arrows for cursor movement. We use single-line `textinput` to sidestep this.
 
+> **In the current repo.** The one-shot Bubble Tea version of input (with history navigation and persistent history) is in [`internal/ui/input.go`](../internal/ui/input.go) — see `chatInputModel`. By chapter 12 the input is part of a larger persistent TUI program, but `input.go` still has the standalone version and the `loadHistory` / `appendHistory` helpers. History persistence isn't wired into the chapter-12 TUI yet — that's one of the exercises in chapter 13.
+
 ## Now try
 
 1. Compare the feel of the harness with the `bufio.Scanner` version (use git to check out an earlier state if you have history) vs the readline version vs the Bubble Tea version. Notice how much "polish" is just affordance count.

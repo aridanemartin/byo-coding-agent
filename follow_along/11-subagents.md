@@ -219,6 +219,14 @@ Three visible cues: the header, the indented tool calls, the footer with elapsed
 
 **Tool subsets.** `tool.Default.Subset("read_file")` constructs a new registry containing *only* `read_file`. The subagent only sees that subset, so it can't run shell commands. This is curation, not restriction — the registry is a regular value, not a permissions construct. If you need real restrictions (sandbox), they have to live in the tool's `Execute` itself.
 
+> **In the current repo.** The pieces from this chapter:
+>
+> - The `Agent` struct: [`internal/agent/agent.go`](../internal/agent/agent.go). Read the field list at the top — `Name`, `LogPrefix`, `Quiet`, `Confirm` are the fields that differ between root and subagent.
+> - The `Subagent` interface and the active-tracker: [`internal/subagent/registry.go`](../internal/subagent/registry.go).
+> - The research subagent: [`internal/subagent/research.go`](../internal/subagent/research.go). Note the system prompt and how it's constructed with `LogPrefix: "  ↳ "`, `Quiet: true`, and `MaxTurns: 10`.
+> - The delegate tool: [`delegate.go`](../delegate.go) (at repo root, not in `internal/tool/`, to avoid the import cycle described above).
+> - Subagent registration: see `registerSubagents()` in [`main.go`](../main.go).
+
 ## Now try
 
 1. Add a second subagent: `CodeReview`. Tools: `read_file`, `bash` (so it can run linters). System prompt: "You are a code reviewer. …". Register it. Confirm `delegate_codereview` appears in `/tools`.

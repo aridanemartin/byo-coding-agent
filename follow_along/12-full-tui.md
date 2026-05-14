@@ -184,6 +184,12 @@ Concretely:
 
 **Sample subagents that never finish.** Because the agent goroutine can block on a confirm channel, you need a way out if the user is stuck. We don't have one — Ctrl-D quits the whole program. Production would also handle Ctrl-C as "abort current operation" by sending a cancel signal through context.
 
+> **In the current repo.** The pieces from this chapter:
+>
+> - The whole TUI: [`internal/ui/program.go`](../internal/ui/program.go). The model is `harness`; the messages are `AppendMsg` / `ApprovalRequest` / `agentDoneMsg`; the state machine is the three constants at the top.
+> - The stdout pipe trick and how the agent's Confirm function gets wired to send `ApprovalRequest`: [`main.go`](../main.go). Read the `main()` function top-to-bottom — pipe setup, program construction, goroutine forwarder, `program.Run()`.
+> - `ui.SuppressSpinner = true` in `main.go` disables the legacy chapter-04 spinner (which would corrupt the TUI by writing `\r` escapes into the pipe).
+
 ## Now try
 
 1. While the agent is running, scroll up with PgUp. Notice the auto-follow stops. Scroll back to bottom (End). Notice it resumes.

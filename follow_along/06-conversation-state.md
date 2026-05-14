@@ -97,6 +97,8 @@ This is a recurring pattern in harness engineering: when there's a feature avail
 
 **Forgetting to append the assistant turn.** A common bug: handle the tool_use blocks but forget to also append the model's response to `messages`. The next API call would have no record of what the model said, and the API would 400 on the orphaned tool_results.
 
+> **In the current repo.** By chapter 11 the `messages` slice moved from a package-level global to a field on the `Agent` struct in [`internal/agent/agent.go`](../internal/agent/agent.go) — see the `messages []api.Message` field and the `Send`/`Messages`/`SetMessages`/`ClearMessages` methods around it. The statelessness story doesn't change; it's just owned by a struct instead of by `main`. That's what lets us have multiple agents (root + subagents) at the same time.
+
 ## Now try
 
 1. After a few turns, dump `messages` to JSON (`json.MarshalIndent(messages, "", "  ")` to stdout) and read the structure. Confirm the alternating user/assistant pattern and the tool_use/tool_result pairings.
