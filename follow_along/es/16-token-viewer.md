@@ -1,5 +1,8 @@
 # 16 · El visor de tokens
 
+Vamos a implementar esto:
+<img width="298" height="129" alt="bettatech-tui-cost" src="https://github.com/user-attachments/assets/b5b81e52-8d34-4375-ba67-0394c33b74e8" />
+
 Cada llamada a la API devuelve un objeto `usage`: cuántos tokens de entrada costó, cuántos tokens de salida produjo, cuántos se sirvieron desde el prompt cache. El harness ha estado tirando esa información a la basura desde el capítulo 01. Este capítulo la conecta a través de todas las capas.
 
 El resultado: un comando `/tokens` que imprime un desglose acumulado, y una línea de estado en vivo en la parte inferior de la TUI que se actualiza después de cada turno. Aproximadamente 80 líneas de código repartidas en cuatro archivos.
