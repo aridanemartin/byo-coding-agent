@@ -72,6 +72,27 @@ const (
 type Response struct {
 	Content    []Block
 	StopReason StopReason
+	Usage      Usage
+}
+
+// Usage reports the token accounting for one API call. Providers fill it in;
+// the harness accumulates totals for the session.
+type Usage struct {
+	InputTokens         int
+	OutputTokens        int
+	CacheCreationTokens int // tokens written to the prompt cache this call
+	CacheReadTokens     int // tokens served from the prompt cache this call
+}
+
+// Add returns the per-field sum. Provider accumulators use this to fold a
+// per-call Usage into the running total.
+func (u Usage) Add(other Usage) Usage {
+	return Usage{
+		InputTokens:         u.InputTokens + other.InputTokens,
+		OutputTokens:        u.OutputTokens + other.OutputTokens,
+		CacheCreationTokens: u.CacheCreationTokens + other.CacheCreationTokens,
+		CacheReadTokens:     u.CacheReadTokens + other.CacheReadTokens,
+	}
 }
 
 // RenderTranscript serializes messages to a human-readable transcript.

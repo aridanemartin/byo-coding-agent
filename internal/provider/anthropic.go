@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"sync"
 
 	"github.com/anthropics/anthropic-sdk-go"
 
@@ -16,6 +17,9 @@ type AnthropicProvider struct {
 	model     anthropic.Model
 	maxTokens int64
 	system    string
+
+	mu    sync.Mutex
+	total api.Usage // cumulative across every Send call on this provider
 }
 
 func NewAnthropicProvider(model anthropic.Model, maxTokens int64, system string) *AnthropicProvider {
@@ -27,8 +31,54 @@ func NewAnthropicProvider(model anthropic.Model, maxTokens int64, system string)
 	}
 }
 
-func (p *AnthropicProvider) Model() string        { return string(p.model) }
-func (p *AnthropicProvider) SetModel(name string) { p.model = anthropic.Model(name) }
+func (p *AnthropicProvider) Model() string { return string(p.model) }
+func (p *AnthropicProvider) SetModel(name string) {
+	p.mu.Lock()
+	p.model = anthropic.Model(name)
+	p.mu.Unlock()
+}
+
+// TotalUsage returns the cumulative tokens this provider has consumed since
+// it was constructed. Subagents that share the provider contribute to the
+// same total.
+func (p *AnthropicProvider) TotalUsage() api.Usage {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.total
+}
+
+// EstimatedCostUSD multiplies the cumulative usage by the current model's
+// per-million-token rates. Returns -1 for an unknown model.
+func (p *AnthropicProvider) EstimatedCostUSD() float64 {
+	p.mu.Lock()
+	u := p.total
+	model := string(p.model)
+	p.mu.Unlock()
+	rates, ok := modelPricing[model]
+	if !ok {
+		return -1
+	}
+	return float64(u.InputTokens)*rates.InputPerMillion/1_000_000 +
+		float64(u.OutputTokens)*rates.OutputPerMillion/1_000_000 +
+		float64(u.CacheCreationTokens)*rates.CacheCreationPerMillion/1_000_000 +
+		float64(u.CacheReadTokens)*rates.CacheReadPerMillion/1_000_000
+}
+
+// pricing is per-million-token rates in USD. Update from
+// https://www.anthropic.com/pricing when rates change.
+type pricing struct {
+	InputPerMillion         float64
+	OutputPerMillion        float64
+	CacheCreationPerMillion float64
+	CacheReadPerMillion     float64
+}
+
+var modelPricing = map[string]pricing{
+	"claude-opus-4-7":   {InputPerMillion: 15.00, OutputPerMillion: 75.00, CacheCreationPerMillion: 18.75, CacheReadPerMillion: 1.50},
+	"claude-opus-4-6":   {InputPerMillion: 15.00, OutputPerMillion: 75.00, CacheCreationPerMillion: 18.75, CacheReadPerMillion: 1.50},
+	"claude-sonnet-4-6": {InputPerMillion: 3.00, OutputPerMillion: 15.00, CacheCreationPerMillion: 3.75, CacheReadPerMillion: 0.30},
+	"claude-haiku-4-5":  {InputPerMillion: 1.00, OutputPerMillion: 5.00, CacheCreationPerMillion: 1.25, CacheReadPerMillion: 0.10},
+}
 
 func (p *AnthropicProvider) Send(ctx context.Context, messages []api.Message, tools []api.ToolDef) (api.Response, error) {
 	resp, err := p.client.Messages.New(ctx, anthropic.MessageNewParams{
@@ -59,6 +109,16 @@ func (p *AnthropicProvider) Send(ctx context.Context, messages []api.Message, to
 			})
 		}
 	}
+
+	out.Usage = api.Usage{
+		InputTokens:         int(resp.Usage.InputTokens),
+		OutputTokens:        int(resp.Usage.OutputTokens),
+		CacheCreationTokens: int(resp.Usage.CacheCreationInputTokens),
+		CacheReadTokens:     int(resp.Usage.CacheReadInputTokens),
+	}
+	p.mu.Lock()
+	p.total = p.total.Add(out.Usage)
+	p.mu.Unlock()
 	return out, nil
 }
 

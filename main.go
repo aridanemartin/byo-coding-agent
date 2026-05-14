@@ -12,6 +12,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 
 	"github.com/betta-tech/byo-coding-agent/internal/agent"
+	"github.com/betta-tech/byo-coding-agent/internal/api"
 	"github.com/betta-tech/byo-coding-agent/internal/compact"
 	"github.com/betta-tech/byo-coding-agent/internal/mcp"
 	"github.com/betta-tech/byo-coding-agent/internal/provider"
@@ -77,8 +78,13 @@ func main() {
 	}
 
 	// Build the Bubble Tea program first — we need its Send() to wire up
-	// the approval flow before the agent ever runs.
-	program := ui.NewProgram(runner)
+	// the approval flow before the agent ever runs. The UsageFunc reports
+	// the provider's session totals so the TUI can render them on the
+	// status line.
+	usageFunc := func() (api.Usage, float64) {
+		return llm.TotalUsage(), llm.EstimatedCostUSD()
+	}
+	program := ui.NewProgram(runner, usageFunc)
 
 	// Confirm: a goroutine-safe function the agent calls when it wants y/n.
 	// It posts an ApprovalRequest to the program and waits on the reply

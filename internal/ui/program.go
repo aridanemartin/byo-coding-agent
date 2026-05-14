@@ -11,8 +11,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/betta-tech/byo-coding-agent/internal/api"
 	"github.com/betta-tech/byo-coding-agent/internal/subagent"
 )
+
+// UsageFunc returns the session's cumulative token usage and estimated cost
+// in USD. Cost is -1 if unknown (e.g. unrecognized model). The TUI renders
+// this on the status line when idle. Optional — pass nil to disable.
+type UsageFunc func() (api.Usage, float64)
 
 // AgentRunner is what the program calls when the user submits a line. It
 // covers both slash commands and normal agent turns — the harness wires it
@@ -45,7 +51,8 @@ const (
 )
 
 type harness struct {
-	runner AgentRunner
+	runner    AgentRunner
+	usageFunc UsageFunc
 
 	width, height int
 
@@ -64,7 +71,7 @@ type harness struct {
 	output *strings.Builder
 }
 
-func newHarness(runner AgentRunner, banner string) harness {
+func newHarness(runner AgentRunner, usageFunc UsageFunc, banner string) harness {
 	ti := textinput.New()
 	ti.Prompt = "❯ "
 	ti.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("36")).Bold(true)
@@ -91,11 +98,14 @@ func newHarness(runner AgentRunner, banner string) harness {
 }
 
 // NewProgram builds the Bubble Tea program. Wire the returned program to
-// a Confirm callback and a stdout-pipe forwarder before calling Run.
-func NewProgram(runner AgentRunner) *tea.Program {
+// a Confirm callback and a stdout-pipe forwarder before calling Run. Pass
+// nil for usageFunc to omit the token-usage line on the status bar.
+func NewProgram(runner AgentRunner, usageFunc UsageFunc) *tea.Program {
 	banner := BannerText(TermWidth())
+	m := newHarness(runner, usageFunc, banner)
+	m.usageFunc = usageFunc
 	return tea.NewProgram(
-		newHarness(runner, banner),
+		m,
 		tea.WithAltScreen(),
 		tea.WithMouseAllMotion(),
 	)
@@ -294,11 +304,53 @@ func (m harness) inputArea() string {
 		Render(m.input.View())
 	hint := Dimmed("  enter: send · pgup/pgdn: scroll · ctrl-d: exit")
 
-	// One line above the input box is always reserved for the spinner —
-	// empty when idle, animated when running. Keeps the layout stable.
-	spinnerLine := ""
-	if m.state == stateRunning {
-		spinnerLine = "  " + m.spinner.View() + " " + Dimmed("thinking..."+activeSubagentSummary())
+	// One line above the input box is always reserved. Running → spinner +
+	// active subagents. Idle → token-usage summary, if a usageFunc was
+	// provided and there's something to show. Keeps the layout stable.
+	statusLine := ""
+	switch m.state {
+	case stateRunning:
+		statusLine = "  " + m.spinner.View() + " " + Dimmed("thinking..."+activeSubagentSummary())
+	case stateIdle:
+		statusLine = "  " + Dimmed(m.usageStatus())
 	}
-	return spinnerLine + "\n" + box + "\n" + hint
+	return statusLine + "\n" + box + "\n" + hint
+}
+
+// usageStatus formats the session's cumulative token usage for the status
+// line. Empty when no calls have been made or no UsageFunc was wired.
+func (m harness) usageStatus() string {
+	if m.usageFunc == nil {
+		return ""
+	}
+	u, cost := m.usageFunc()
+	if u.InputTokens == 0 && u.OutputTokens == 0 {
+		return ""
+	}
+	parts := []string{
+		fmt.Sprintf("%s in", formatThousands(u.InputTokens)),
+		fmt.Sprintf("%s out", formatThousands(u.OutputTokens)),
+	}
+	if u.CacheCreationTokens > 0 || u.CacheReadTokens > 0 {
+		parts = append(parts, fmt.Sprintf("cache %s/%s",
+			formatThousands(u.CacheCreationTokens),
+			formatThousands(u.CacheReadTokens)))
+	}
+	if cost >= 0 {
+		parts = append(parts, fmt.Sprintf("~$%.4f", cost))
+	}
+	return strings.Join(parts, " · ")
+}
+
+// formatThousands inserts thousands separators into a non-negative int.
+// Mirrors the helper in commands.go; lives here too to avoid a UI → main
+// dependency.
+func formatThousands(n int) string {
+	if n < 0 {
+		return "-" + formatThousands(-n)
+	}
+	if n < 1000 {
+		return fmt.Sprintf("%d", n)
+	}
+	return formatThousands(n/1000) + "," + fmt.Sprintf("%03d", n%1000)
 }

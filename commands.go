@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/betta-tech/byo-coding-agent/internal/api"
 	"github.com/betta-tech/byo-coding-agent/internal/compact"
 	"github.com/betta-tech/byo-coding-agent/internal/subagent"
 	"github.com/betta-tech/byo-coding-agent/internal/ui"
@@ -36,7 +37,49 @@ func init() {
 		usage:       "/verbose [on|off]",
 		run:         cmdVerbose,
 	}
+	commands["tokens"] = command{description: "show cumulative token usage and estimated cost", run: cmdTokens}
 	commands["exit"] = command{description: "exit the harness", run: cmdExit}
+}
+
+// tokenReporter is what cmdTokens type-asserts to. We didn't widen the
+// Provider interface because not every backend has a "tokens" concept; any
+// provider that does just satisfies this implicit contract.
+type tokenReporter interface {
+	TotalUsage() api.Usage
+	EstimatedCostUSD() float64
+}
+
+func cmdTokens(_ string) {
+	stats, ok := rootAgent.Provider.(tokenReporter)
+	if !ok {
+		fmt.Println(ui.Dimmed("this provider doesn't report token usage"))
+		return
+	}
+	u := stats.TotalUsage()
+	cost := stats.EstimatedCostUSD()
+	fmt.Println(ui.Dimmed("session usage:"))
+	fmt.Printf("  input          %s\n", ui.Cyan(formatThousands(u.InputTokens)))
+	fmt.Printf("  output         %s\n", ui.Cyan(formatThousands(u.OutputTokens)))
+	if u.CacheCreationTokens > 0 || u.CacheReadTokens > 0 {
+		fmt.Printf("  cache write    %s\n", ui.Cyan(formatThousands(u.CacheCreationTokens)))
+		fmt.Printf("  cache read     %s\n", ui.Cyan(formatThousands(u.CacheReadTokens)))
+	}
+	if cost >= 0 {
+		fmt.Printf("  est. cost      %s\n", ui.Cyan(fmt.Sprintf("$%.4f", cost)))
+	} else {
+		fmt.Printf("  est. cost      %s\n", ui.Dimmed("(unknown model — no rate)"))
+	}
+}
+
+// formatThousands inserts thousands separators into a non-negative int.
+func formatThousands(n int) string {
+	if n < 0 {
+		return "-" + formatThousands(-n)
+	}
+	if n < 1000 {
+		return fmt.Sprintf("%d", n)
+	}
+	return formatThousands(n/1000) + "," + fmt.Sprintf("%03d", n%1000)
 }
 
 // runCommand handles a line that starts with "/". Returns true if handled,

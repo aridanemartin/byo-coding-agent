@@ -31,6 +31,7 @@ Standalone chapters that extend the harness with concrete integrations. They bui
 |---|---|---|
 | [14](14-mcp-support.md) | Adding MCP support | Wrapping remote Model Context Protocol servers behind the `Tool` interface |
 | [15](15-agents-md.md) | Project context with AGENTS.md | Loading a project-specific markdown file into the system prompt at startup |
+| [16](16-token-viewer.md) | The token viewer | Tracking session usage and cost, `/tokens` command and a live status line |
 
 ## How to read this
 
