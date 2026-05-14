@@ -3,11 +3,14 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
 
 	"github.com/betta-tech/byo-coding-agent/internal/api"
+	"github.com/betta-tech/byo-coding-agent/internal/debug"
 )
 
 // AnthropicProvider is the reference Provider implementation. It is the
@@ -81,6 +84,9 @@ var modelPricing = map[string]pricing{
 }
 
 func (p *AnthropicProvider) Send(ctx context.Context, messages []api.Message, tools []api.ToolDef) (api.Response, error) {
+	reqSummary := fmt.Sprintf("→ anthropic.Send model=%s msgs=%d tools=%d", p.model, len(messages), len(tools))
+	reqID := debug.Recordp("provider", debug.LevelInfo, reqSummary, marshalRequestPayload(string(p.model), p.system, p.maxTokens, messages, tools))
+	start := time.Now()
 	resp, err := p.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     p.model,
 		MaxTokens: p.maxTokens,
@@ -91,7 +97,9 @@ func (p *AnthropicProvider) Send(ctx context.Context, messages []api.Message, to
 			OfAdaptive: &anthropic.ThinkingConfigAdaptiveParam{},
 		},
 	})
+	elapsed := time.Since(start).Round(time.Millisecond)
 	if err != nil {
+		debug.Recordfc(reqID, "provider", debug.LevelError, "← anthropic.Send error (%v): %v", elapsed, err)
 		return api.Response{}, err
 	}
 
@@ -119,6 +127,10 @@ func (p *AnthropicProvider) Send(ctx context.Context, messages []api.Message, to
 	p.mu.Lock()
 	p.total = p.total.Add(out.Usage)
 	p.mu.Unlock()
+	respSummary := fmt.Sprintf("← anthropic.Send (%v in=%d out=%d cache=%d/%d stop=%s)",
+		elapsed, out.Usage.InputTokens, out.Usage.OutputTokens,
+		out.Usage.CacheCreationTokens, out.Usage.CacheReadTokens, out.StopReason)
+	debug.Recordpc(reqID, "provider", debug.LevelInfo, respSummary, marshalResponsePayload(out, elapsed))
 	return out, nil
 }
 

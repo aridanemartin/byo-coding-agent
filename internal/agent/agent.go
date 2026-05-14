@@ -7,9 +7,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/betta-tech/byo-coding-agent/internal/api"
 	"github.com/betta-tech/byo-coding-agent/internal/compact"
+	"github.com/betta-tech/byo-coding-agent/internal/debug"
 	"github.com/betta-tech/byo-coding-agent/internal/provider"
 	"github.com/betta-tech/byo-coding-agent/internal/tool"
 )
@@ -69,12 +71,24 @@ func (a *Agent) loop(ctx context.Context) (string, error) {
 	var finalText strings.Builder
 
 	for turn := 0; turn < a.MaxTurns; turn++ {
-		if compacted, err := a.Compactor.Compact(ctx, a.messages); err != nil {
+		before := a.messages
+		if compacted, err := a.Compactor.Compact(ctx, before); err != nil {
 			fmt.Printf("%scompaction error: %v (continuing without)\n", a.LogPrefix, err)
+			debug.Recordp("compact", debug.LevelError,
+				fmt.Sprintf("%s: %v", a.compactorName(), err),
+				api.RenderTranscript(before))
 		} else {
-			if a.Verbose && len(compacted) != len(a.messages) {
-				fmt.Printf("--- compaction: %d → %d ---\n", len(a.messages), len(compacted))
-				fmt.Print(api.RenderTranscript(a.messages))
+			if len(compacted) != len(before) {
+				summary := fmt.Sprintf("%s: %d → %d msgs", a.compactorName(), len(before), len(compacted))
+				payload := "--- before (" + fmt.Sprint(len(before)) + " msgs) ---\n" +
+					api.RenderTranscript(before) +
+					"\n--- after (" + fmt.Sprint(len(compacted)) + " msgs) ---\n" +
+					api.RenderTranscript(compacted)
+				debug.Recordp("compact", debug.LevelInfo, summary, payload)
+			}
+			if a.Verbose && len(compacted) != len(before) {
+				fmt.Printf("--- compaction: %d → %d ---\n", len(before), len(compacted))
+				fmt.Print(api.RenderTranscript(before))
 				fmt.Println("---")
 				fmt.Print(api.RenderTranscript(compacted))
 				fmt.Println("---")
@@ -128,8 +142,44 @@ func (a *Agent) loop(ctx context.Context) (string, error) {
 // and dispatches to the registry.
 func (a *Agent) executeTool(ctx context.Context, name, rawInput string) (string, bool) {
 	fmt.Printf("%s[tool] %s %s\n", a.LogPrefix, name, rawInput)
+	src := "tool"
+	if a.Name != "" {
+		src = "tool/" + a.Name
+	}
+	reqID := debug.Recordp(src, debug.LevelInfo,
+		fmt.Sprintf("→ %s %s", name, truncate(rawInput, 200)),
+		rawInput)
+
 	if a.Confirm != nil && !a.Confirm("approve?") {
+		debug.Recordfc(reqID, src, debug.LevelWarn, "denied: %s", name)
 		return "user denied this tool call", true
 	}
-	return a.Tools.Execute(ctx, name, rawInput)
+
+	start := time.Now()
+	result, isErr := a.Tools.Execute(ctx, name, rawInput)
+	elapsed := time.Since(start).Round(time.Millisecond)
+	level := debug.LevelInfo
+	verdict := fmt.Sprintf("← %s (%v, %d bytes)", name, elapsed, len(result))
+	if isErr {
+		level = debug.LevelError
+		verdict = fmt.Sprintf("← %s error (%v): %s", name, elapsed, truncate(result, 200))
+	}
+	debug.Recordpc(reqID, src, level, verdict, result)
+	return result, isErr
+}
+
+// compactorName returns a short label for whichever compaction strategy is
+// active. Used in debug-log entries so it's obvious what ran.
+func (a *Agent) compactorName() string {
+	if a.Compactor == nil {
+		return "none"
+	}
+	return fmt.Sprintf("%T", a.Compactor)
+}
+
+func truncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "…"
 }

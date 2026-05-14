@@ -39,6 +39,25 @@ export ANTHROPIC_API_KEY=sk-ant-...
 go run .
 ```
 
+To run against OpenAI as well, export the key once:
+
+```sh
+export OPENAI_API_KEY=sk-...
+go run .
+```
+
+Then switch providers mid-session with the slash command — no restart needed:
+
+```
+/provider              # show current provider + the available choices
+/provider openai       # swap to OpenAI (defaults to gpt-5-codex)
+/provider openai gpt-4o-mini
+/provider anthropic
+/model gpt-5           # change just the model on the current provider
+```
+
+Both providers implement the same [`Provider`](internal/provider/provider.go) interface; the rest of the harness is unchanged when you swap. Setting `LLM_PROVIDER`/`LLM_MODEL` env vars still works as a startup default if you'd rather not type the command every session.
+
 Type `/help` to see commands. Try:
 
 - `list the files here`
@@ -177,9 +196,13 @@ There's a subtle bit: a naive truncation can leave a `tool_use` block without it
 | Command | Effect |
 |---|---|
 | `/help` | List all commands |
-| `/model [name]` | Show current model or change it |
+| `/provider [anthropic\|openai] [model]` | Show or swap the LLM provider |
+| `/model [name]` | Show current model or change it (provider-aware suggestions) |
+| `/tokens` | Show cumulative input/output tokens and estimated cost |
+| `/debug [on\|off\|clear]` | Toggle the live debug panel (provider calls, tool dispatch, compaction) |
 | `/clear` | Wipe conversation history |
 | `/tools` | List registered tools |
+| `/subagents` | List registered and in-flight subagents |
 | `/compact [sliding\|summarize\|none]` | Run compaction (configured strategy, or ad-hoc one) |
 | `/verbose [on\|off]` | Toggle before/after printing on compaction |
 | `/exit` | Quit |

@@ -115,7 +115,21 @@ Inyecta respuestas de texto predefinidas, bloques `tool_use` predefinidos, etc. 
 
 Si tu proveedor puede reportar el uso de tokens, añade un método `TotalUsage()` fuera de la interfaz que devuelva los conteos acumulados de la sesión. El comando `/tokens` hace type-assertion sobre este método (mira [`follow_along/es/16-token-viewer.md`](../../follow_along/es/16-token-viewer.md)) — impleméntalo y el visor de tokens funciona sin más.
 
+## Ejemplo resuelto: el proveedor de OpenAI
+
+[`internal/provider/openai.go`](../../internal/provider/openai.go) es un segundo proveedor completo, que implementa la misma interfaz `Provider` contra la API Chat Completions de OpenAI. Léelo en paralelo con `anthropic.go` para ver los patrones de traducción en la práctica — el mismo slice `api.Message` se despliega hacia formas muy distintas en cada SDK:
+
+| Concepto | Forma en Anthropic | Forma en OpenAI |
+|---|---|---|
+| System prompt | Campo de nivel superior en la solicitud | Primer mensaje con `role:"system"` en el array |
+| Tool result | Bloque dentro de un mensaje de rol user | Mensaje separado con `role:"tool"` |
+| Definición de herramienta | `properties` + `required` como dos campos | Un objeto JSON Schema que envuelve ambos |
+| Stop reason | `end_turn` / `tool_use` | `stop` / `tool_calls` |
+| Reporte de caché | `cache_creation_input_tokens` + `cache_read_input_tokens` | Solo `prompt_tokens_details.cached_tokens` |
+
+La interfaz absorbe todo eso; el bucle del agente y las herramientas no saben cuál se está usando. Cambia en tiempo de ejecución con `LLM_PROVIDER=openai` (y opcionalmente `LLM_MODEL=gpt-5-codex`).
+
 ## Ver también
 
 - [`follow_along/es/03-the-provider-interface.md`](../../follow_along/es/03-the-provider-interface.md) para entender por qué la interfaz tiene la forma que tiene.
-- [`internal/provider/anthropic.go`](../../internal/provider/anthropic.go) para la implementación de referencia.
+- [`internal/provider/anthropic.go`](../../internal/provider/anthropic.go) y [`internal/provider/openai.go`](../../internal/provider/openai.go) para las dos implementaciones de referencia.

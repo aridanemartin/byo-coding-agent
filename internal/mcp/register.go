@@ -77,25 +77,58 @@ func LoadConfig(path string) (*Config, error) {
 	return &c, nil
 }
 
+// ProgressStatus is one phase of MCP server bring-up. A ProgressFunc gets
+// called once per phase per server, plus ProgressBegin/ProgressDone
+// bracketing the whole batch, so the TUI can render a loading indicator.
+type ProgressStatus int
+
+const (
+	ProgressBegin      ProgressStatus = iota // sent once before any server work
+	ProgressConnecting                       // about to dial the named server
+	ProgressConnected                        // server connected + tools listed
+	ProgressFailed                           // server skipped due to error
+	ProgressDone                             // all servers processed
+)
+
+// ProgressFunc reports background progress while Register is iterating the
+// server list. server is the current server's name (empty on Begin/Done);
+// total is the constant count of servers in the config.
+type ProgressFunc func(server string, status ProgressStatus, total int)
+
 // Register connects to every server in cfg and registers their tools into
 // the supplied Registry. Returns the open clients so main can defer Close.
 // Server failures are logged to stderr and skipped — losing one MCP server
-// shouldn't kill the harness.
-func Register(ctx context.Context, cfg *Config, registry *tool.Registry) []*Client {
+// shouldn't kill the harness. Pass a non-nil progress to receive per-server
+// lifecycle events; pass nil if you don't care.
+func Register(ctx context.Context, cfg *Config, registry *tool.Registry, progress ProgressFunc) []*Client {
 	if cfg == nil {
 		return nil
 	}
+	total := len(cfg.Servers)
+	if progress != nil {
+		progress("", ProgressBegin, total)
+		defer progress("", ProgressDone, total)
+	}
 	var clients []*Client
 	for _, s := range cfg.Servers {
+		if progress != nil {
+			progress(s.Name, ProgressConnecting, total)
+		}
 		client, err := dial(ctx, s)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "mcp: skip server %q: %v\n", s.Name, err)
+			if progress != nil {
+				progress(s.Name, ProgressFailed, total)
+			}
 			continue
 		}
 		defs, err := client.ListTools(ctx)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "mcp: list tools from %q failed: %v\n", s.Name, err)
 			_ = client.Close()
+			if progress != nil {
+				progress(s.Name, ProgressFailed, total)
+			}
 			continue
 		}
 		for _, d := range defs {
@@ -116,6 +149,9 @@ func Register(ctx context.Context, cfg *Config, registry *tool.Registry) []*Clie
 			})
 		}
 		clients = append(clients, client)
+		if progress != nil {
+			progress(s.Name, ProgressConnected, total)
+		}
 	}
 	return clients
 }

@@ -115,7 +115,21 @@ Inject canned text responses, canned `tool_use` blocks, etc. — useful for unit
 
 If your provider can report token usage, add a non-interface `TotalUsage()` method that returns cumulative session counts. The `/tokens` slash command type-asserts on this method (see [`follow_along/en/16-token-viewer.md`](../../follow_along/en/16-token-viewer.md)) — implement it and the token viewer just works.
 
+## Worked example: the OpenAI provider
+
+[`internal/provider/openai.go`](../../internal/provider/openai.go) is a complete second provider, implementing the same `Provider` interface against OpenAI's Chat Completions API. Read it side-by-side with `anthropic.go` to see the translation patterns in practice — the same `api.Message` slice fans out into very different SDK shapes:
+
+| Concept | Anthropic shape | OpenAI shape |
+|---|---|---|
+| System prompt | Top-level field on the request | First message with `role:"system"` in the array |
+| Tool result | Block inside a user-role message | Separate message with `role:"tool"` |
+| Tool definition | `properties` + `required` as two fields | One JSON Schema object wrapping both |
+| Stop reason | `end_turn` / `tool_use` | `stop` / `tool_calls` |
+| Cache reporting | `cache_creation_input_tokens` + `cache_read_input_tokens` | `prompt_tokens_details.cached_tokens` only |
+
+The interface absorbs all of that; the agent loop and tools don't care which is in use. Switch at runtime with `LLM_PROVIDER=openai` (and optionally `LLM_MODEL=gpt-5-codex`).
+
 ## See also
 
 - [`follow_along/en/03-the-provider-interface.md`](../../follow_along/en/03-the-provider-interface.md) for why the interface looks the way it does.
-- [`internal/provider/anthropic.go`](../../internal/provider/anthropic.go) for the reference implementation.
+- [`internal/provider/anthropic.go`](../../internal/provider/anthropic.go) and [`internal/provider/openai.go`](../../internal/provider/openai.go) for the two reference implementations.

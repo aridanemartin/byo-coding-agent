@@ -39,6 +39,25 @@ export ANTHROPIC_API_KEY=sk-ant-...
 go run .
 ```
 
+Para ejecutarlo contra OpenAI también, exporta la clave una vez:
+
+```sh
+export OPENAI_API_KEY=sk-...
+go run .
+```
+
+Después cambia de proveedor a mitad de sesión con el comando de barra — sin reiniciar:
+
+```
+/provider              # muestra el proveedor actual y las opciones disponibles
+/provider openai       # cambia a OpenAI (por defecto usa gpt-5-codex)
+/provider openai gpt-4o-mini
+/provider anthropic
+/model gpt-5           # cambia solo el modelo del proveedor actual
+```
+
+Ambos proveedores implementan la misma interfaz [`Provider`](internal/provider/provider.go); el resto del harness no cambia al hacer el swap. Las variables de entorno `LLM_PROVIDER`/`LLM_MODEL` siguen funcionando como valores por defecto al arranque si prefieres no tener que escribir el comando en cada sesión.
+
 Escribe `/help` para ver los comandos. Prueba con:
 
 - `list the files here`
@@ -177,9 +196,13 @@ Detalle sutil: una truncación ingenua puede dejar un bloque `tool_use` sin su `
 | Comando | Efecto |
 |---|---|
 | `/help` | Lista todos los comandos |
-| `/model [nombre]` | Muestra el modelo actual o lo cambia |
+| `/provider [anthropic\|openai] [modelo]` | Muestra o cambia el proveedor de LLM |
+| `/model [nombre]` | Muestra el modelo actual o lo cambia (sugerencias según proveedor) |
+| `/tokens` | Muestra tokens acumulados de entrada/salida y coste estimado |
+| `/debug [on\|off\|clear]` | Alterna el panel de debug en vivo (llamadas al proveedor, dispatch de herramientas, compactación) |
 | `/clear` | Borra el historial de conversación |
 | `/tools` | Lista las herramientas registradas |
+| `/subagents` | Lista subagentes registrados y en vuelo |
 | `/compact [sliding\|summarize\|none]` | Ejecuta compactación (estrategia configurada o ad-hoc) |
 | `/verbose [on\|off]` | Activa/desactiva la impresión del antes/después al compactar |
 | `/exit` | Salir |
