@@ -3,6 +3,7 @@
 We are going to implement this:
 
 <img width="298" height="129" alt="bettatech-tui-cost" src="https://github.com/user-attachments/assets/b5b81e52-8d34-4375-ba67-0394c33b74e8" />
+
 Every API call returns a `usage` object: how many input tokens it cost, how many output tokens it produced, how many were served from the prompt cache. The harness has been throwing that information away since chapter 01. This chapter wires it through.
 
 The result: a `/tokens` command that prints a cumulative breakdown, and a live status line at the bottom of the TUI that updates after every turn. Roughly 80 lines of code across four files.
