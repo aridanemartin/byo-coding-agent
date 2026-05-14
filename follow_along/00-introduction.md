@@ -6,17 +6,7 @@ A coding agent in a terminal. You type a question or a task; the agent calls too
 
 The build target looks like this when you run it:
 
-```
-██████╗ ███████╗████████╗████████╗ █████╗ ████████╗███████╗ ██████╗██╗  ██╗
-██╔══██╗██╔════╝╚══██╔══╝╚══██╔══╝██╔══██╗╚══██╔══╝██╔════╝██╔════╝██║  ██║
-[…]
-              build your own coding agent
-              type a message · /help for commands · ctrl-d to exit
-
-╭───────────────────────────────────────────────────────────╮
-│ ❯ where is the agent loop defined?                        │
-╰───────────────────────────────────────────────────────────╯
-```
+<img width="885" height="332" alt="bettatech-tui" src="https://github.com/user-attachments/assets/c726f9c6-466b-4193-8f24-5a4bb9e96994" />
 
 There's nothing exotic in here. It's a model, a loop that calls it, some tools the model can use, and a UI that lets a human steer it. The interesting thing is the *seams* — where one piece ends and the next begins.
 
