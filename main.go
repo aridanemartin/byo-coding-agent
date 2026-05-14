@@ -154,10 +154,11 @@ func main() {
 	// Confirm: a goroutine-safe function the agent calls when it wants y/n.
 	// It posts an ApprovalRequest to the program and waits on the reply
 	// channel. The program's Update flips into stateAwaitingApproval, the
-	// user picks, and we resume.
-	rootAgent.Confirm = func(prompt string) bool {
+	// user picks, and we resume. detail is optional long-form content
+	// (e.g. a diff for write_file calls) shown in a modal.
+	rootAgent.Confirm = func(prompt, detail string) bool {
 		reply := make(chan bool, 1)
-		program.Send(ui.ApprovalRequest{Prompt: prompt, Reply: reply})
+		program.Send(ui.ApprovalRequest{Prompt: prompt, Detail: detail, Reply: reply})
 		return <-reply
 	}
 

@@ -47,8 +47,14 @@ type AppendMsg string
 
 // ApprovalRequest is sent (via program.Send) when the agent needs y/n from
 // the user. The program shows the prompt and writes the answer to Reply.
+//
+// Detail is optional long-form content. When non-empty, the TUI renders a
+// full-screen modal with the detail (syntax-highlighted if it looks like
+// a diff or JSON) instead of the inline single-line y/n box — used by
+// write_file so the user can review the unified diff before approving.
 type ApprovalRequest struct {
 	Prompt string
+	Detail string
 	Reply  chan bool
 }
 
@@ -99,6 +105,7 @@ type harness struct {
 
 	state          modelState
 	approvalPrompt string
+	approvalDetail string // optional diff/payload shown in the approval modal
 	approvalReply  chan bool
 	followBottom   bool // auto-scroll viewport to bottom on new content
 
@@ -358,7 +365,16 @@ func (m harness) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ApprovalRequest:
 		m.state = stateAwaitingApproval
 		m.approvalPrompt = msg.Prompt
+		m.approvalDetail = msg.Detail
 		m.approvalReply = msg.Reply
+		if m.approvalDetail != "" {
+			// Reuse debugView (it's just a viewport) to host the diff
+			// inside the approval modal. Set its size to the modal body
+			// and fill it with the syntax-highlighted detail.
+			m.layout()
+			m.debugView.SetContent(HighlightPayload(m.approvalDetail, m.debugView.Width))
+			m.debugView.GotoTop()
+		}
 		return m, nil
 
 	case shineTickMsg:
@@ -448,6 +464,17 @@ func (m harness) updateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m harness) updateApproval(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// When the approval includes a diff/detail, forward scroll keys to the
+	// modal viewport so the user can browse long diffs. y/n still resolves.
+	if m.approvalDetail != "" {
+		switch msg.Type {
+		case tea.KeyPgUp, tea.KeyPgDown, tea.KeyHome, tea.KeyEnd, tea.KeyUp, tea.KeyDown:
+			var cmd tea.Cmd
+			m.debugView, cmd = m.debugView.Update(msg)
+			return m, cmd
+		}
+	}
+
 	var answer bool
 	switch msg.String() {
 	case "y", "Y":
@@ -471,7 +498,11 @@ func (m harness) updateApproval(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.approvalReply = nil
 	}
 	m.approvalPrompt = ""
+	m.approvalDetail = ""
 	m.state = stateRunning
+	// If the modal was up, layout needs to revert from modal-size to the
+	// normal panel/viewport split before the next render.
+	m.layout()
 	return m, nil
 }
 
@@ -483,12 +514,13 @@ func (m harness) runOnce(text string) tea.Cmd {
 }
 
 // layout recomputes viewport widths/heights from the current window size.
-// In detail mode the debug viewport is resized to fit the modal body; in
-// every other state it goes back to the bottom-panel dimensions.
+// In any modal state (debug detail OR approval-with-diff) the debug
+// viewport is resized to fit the modal body; in every other state it
+// goes back to the bottom-panel dimensions.
 func (m *harness) layout() {
 	m.input.Width = max(m.width-6, 20)
 
-	if m.debugMode == debugDetail && debug.Enabled() {
+	if m.inModal() {
 		modalW, modalH := m.modalSize()
 		// Inside: outer border (2 cols/rows) + horizontal padding (2 cols)
 		// + 2 rows for title + separator.
@@ -506,6 +538,20 @@ func (m *harness) layout() {
 	m.viewport.Height = max(m.height-inputHeight-debugH, 3)
 	m.debugView.Width = max(m.width-2, 20)
 	m.debugView.Height = max(debugPanelHeight-2, 1)
+}
+
+// inModal reports whether the current state should render a centered
+// full-screen modal in place of the normal viewport+input layout. Two
+// callers: the debug detail view (Enter on a panel entry) and the
+// approval-with-diff flow (write_file proposal).
+func (m *harness) inModal() bool {
+	if m.debugMode == debugDetail && debug.Enabled() {
+		return true
+	}
+	if m.state == stateAwaitingApproval && m.approvalDetail != "" {
+		return true
+	}
+	return false
 }
 
 // modalSize returns the outer width/height of the detail modal — capped so
@@ -894,6 +940,9 @@ var selectedLineStyle = lipgloss.NewStyle().
 	Background(lipgloss.Color("237"))
 
 func (m harness) View() string {
+	if m.state == stateAwaitingApproval && m.approvalDetail != "" {
+		return m.viewApprovalModal()
+	}
 	if m.debugMode == debugDetail && debug.Enabled() {
 		return m.viewDebugModal()
 	}
@@ -907,6 +956,39 @@ func (m harness) View() string {
 	}
 	parts = append(parts, m.inputArea())
 	return lipgloss.JoinVertical(lipgloss.Left, parts...)
+}
+
+// viewApprovalModal renders the full-screen modal that takes over while
+// the user is reviewing a write_file proposal. Same shape as the debug
+// modal but with a yellow border so it's unmistakably a "you need to
+// decide" state, and a different hint line (y/n instead of esc/tab).
+func (m harness) viewApprovalModal() string {
+	modalW, modalH := m.modalSize()
+
+	titleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true)
+	sep := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).
+		Render(strings.Repeat("─", max(modalW-4, 1)))
+
+	inner := titleStyle.Render(m.approvalPrompt) + "\n" + sep + "\n" + m.debugView.View()
+
+	modal := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("220")).
+		Padding(0, 1).
+		Width(modalW).
+		Height(modalH).
+		Render(inner)
+
+	hint := Dimmed("  y: approve · n / esc: deny · pgup/pgdn / ↑↓: scroll")
+	modalLine := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, modal)
+	hintLine := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, hint)
+	content := modalLine + "\n" + hintLine
+
+	pad := (m.height - lipgloss.Height(content)) / 2
+	if pad < 0 {
+		pad = 0
+	}
+	return strings.Repeat("\n", pad) + content
 }
 
 // viewDebugModal renders the full-screen modal that takes over while the

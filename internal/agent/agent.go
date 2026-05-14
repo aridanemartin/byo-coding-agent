@@ -5,6 +5,7 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -29,7 +30,7 @@ type Agent struct {
 	Verbose   bool                       // print compaction before/after
 	LogPrefix string                     // prefix for tool-call log lines
 	Quiet     bool                       // suppress assistant-text printing (set for subagents)
-	Confirm   func(prompt string) bool   // nil = auto-approve every tool call
+	Confirm   func(prompt, detail string) bool // nil = auto-approve every tool call. detail is optional long-form (e.g. a diff)
 
 	messages []api.Message
 }
@@ -150,7 +151,22 @@ func (a *Agent) executeTool(ctx context.Context, name, rawInput string) (string,
 		fmt.Sprintf("→ %s %s", name, truncate(rawInput, 200)),
 		rawInput)
 
-	if a.Confirm != nil && !a.Confirm("approve?") {
+	// Build the approval prompt. For write_file we additionally compute a
+	// unified diff against the current file contents; the UI shows that
+	// in a modal so the user can review the change before approving.
+	prompt, detail := "approve?", ""
+	if name == "write_file" {
+		if d := buildWriteDiff(rawInput); d != "" {
+			detail = d
+			if path := extractWritePath(rawInput); path != "" {
+				prompt = "approve write to " + path + "?"
+			} else {
+				prompt = "approve write?"
+			}
+		}
+	}
+
+	if a.Confirm != nil && !a.Confirm(prompt, detail) {
 		debug.Recordfc(reqID, src, debug.LevelWarn, "denied: %s", name)
 		return "user denied this tool call", true
 	}
@@ -182,4 +198,17 @@ func truncate(s string, n int) string {
 		return s
 	}
 	return s[:n] + "…"
+}
+
+// extractWritePath pulls the path out of a write_file tool input so the
+// approval prompt can name the target file. Returns "" on any parse
+// failure — the caller falls back to a generic prompt.
+func extractWritePath(rawInput string) string {
+	var in struct {
+		Path string `json:"path"`
+	}
+	if err := json.Unmarshal([]byte(rawInput), &in); err != nil {
+		return ""
+	}
+	return in.Path
 }

@@ -33,6 +33,7 @@ Capítulos independientes que extienden el harness con integraciones concretas. 
 | [15](15-agents-md.md) | Contexto del proyecto con AGENTS.md | Cargar un archivo markdown específico del proyecto en el system prompt al arranque |
 | [16](16-token-viewer.md) | El visor de tokens | Rastrear el uso y el coste de la sesión, comando `/tokens` y línea de estado en vivo |
 | [17](17-prompt-caching.md) | Prompt caching | Qué es, qué lo invalida, y el cambio de una línea para activarlo |
+| [18](18-diff-approval.md) | Aprobación con diff para escrituras | Mostrar un diff unificado en un modal antes de que `write_file` toque disco |
 
 ## Cómo leer esto
 
