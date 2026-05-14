@@ -232,12 +232,13 @@ Cada uno es un capítulo siguiente válido.
 
 ## Documentación
 
-Dos sabores de documentación, para las dos razones por las que alguien lee este repositorio:
+Tres sabores de documentación, para las tres razones por las que alguien lee este repositorio:
 
+- [`examples/minimal/`](examples/minimal/) — una versión en un solo archivo (~130 líneas) del bucle del agente, sin abstracciones. La forma más rápida de ver "la esencia" antes de que aparezca cualquier maquinaria del harness. Ejecuta con `go run ./examples/minimal`.
 - [`follow_along/`](follow_along/es/README.md) — narrativa del tamaño de capítulos sobre el *por qué* de cada capa del harness, en el orden en que se construyó. Léela en orden; alrededor de una hora en total. Disponible en [inglés](follow_along/en/README.md) y [español](follow_along/es/README.md).
 - [`how-to/`](how-to/es/README.md) — referencias breves en formato receta para las tareas de extensión más comunes: [añadir una herramienta](how-to/es/add-a-tool.md), [añadir un proveedor](how-to/es/add-a-provider.md), [añadir una política de permisos](how-to/es/add-a-permission-policy.md). También bilingüe.
 
-Si estás aprendiendo, empieza por `follow_along/`. Si ya lo construiste y quieres extenderlo, salta a `how-to/`.
+Si quieres una probada rápida, empieza por `examples/minimal/`. Si quieres la historia completa, lee `follow_along/` en orden. Si ya lo construiste y quieres extenderlo, salta a `how-to/`.
 
 ## Reconocimientos
 

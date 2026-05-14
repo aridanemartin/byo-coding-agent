@@ -1,5 +1,7 @@
 # 01 · El bucle del agente
 
+> **¿Quieres saltarte la explicación y verlo correr?** [`examples/minimal/main.go`](../../examples/minimal/main.go) es el agente entero en un archivo de ~130 líneas — sin abstracciones, sin TUI, solo el bucle y tres herramientas. Ejecútalo con `go run ./examples/minimal` y luego vuelve aquí para el porqué.
+
 Antes de empezar, déjame mostrate el bucle general de cualquier aplicación que use agentes de IA a modo de arnés:
 
 ```

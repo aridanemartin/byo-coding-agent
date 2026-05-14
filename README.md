@@ -232,12 +232,13 @@ Each one is a worthwhile next chapter.
 
 ## Documentation
 
-Two flavors of docs, for the two reasons people read this repo:
+Three flavors of docs, for the three reasons people read this repo:
 
+- [`examples/minimal/`](examples/minimal/) — a single-file (~130 lines) version of the agent loop, no abstractions. The fastest way to see "the essence" before any harness machinery shows up. Run with `go run ./examples/minimal`.
 - [`follow_along/`](follow_along/en/README.md) — chapter-length narrative on the *why* of every layer in the harness, in the order it was built. Read in order; about an hour total. Available in [English](follow_along/en/README.md) and [Spanish](follow_along/es/README.md).
 - [`how-to/`](how-to/en/README.md) — short recipe-style references for the extension tasks people actually do: [add a tool](how-to/en/add-a-tool.md), [add a provider](how-to/en/add-a-provider.md), [add a permission policy](how-to/en/add-a-permission-policy.md). Also bilingual.
 
-If you're learning, start with `follow_along/`. If you've already built it and want to extend it, jump to `how-to/`.
+If you want a quick taste, start with `examples/minimal/`. If you want the full story, read `follow_along/` in order. If you've already built it and want to extend it, jump to `how-to/`.
 
 ## Acknowledgments
 

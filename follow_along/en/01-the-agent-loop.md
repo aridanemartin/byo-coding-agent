@@ -1,5 +1,7 @@
 # 01 · The agent loop
 
+> **Want to skip the explanation and just see it run?** [`examples/minimal/main.go`](../../examples/minimal/main.go) is the entire agent in one ~130-line file — no abstractions, no TUI, just the loop and three tools. Run it with `go run ./examples/minimal` and then come back here for the why.
+
 The whole thing fits in one diagram:
 
 ```
