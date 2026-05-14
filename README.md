@@ -1,5 +1,7 @@
 # Build Your Own Coding Agent
 
+[![ci](https://github.com/betta-tech/byo-coding-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/betta-tech/byo-coding-agent/actions/workflows/ci.yml)
+
 🌐 **Languages:** **English** · [Español](README.es.md)
 
 A hands-on introduction to **harness engineering** — the discipline of building the scaffolding around an LLM that turns it into a useful agent. You'll build a working AI coding agent in Go, then experiment with the parts that matter: providers, tools, compaction strategies, and permissions.

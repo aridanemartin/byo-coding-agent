@@ -88,28 +88,26 @@ Compila, ejecuta. El resto del harness no cambia.
 
 ## Proveedor mock para pruebas
 
-Un stub mínimo que devuelve respuestas predefinidas, útil para probar el bucle del agente sin una clave de API:
+El harness ya incluye uno: [`internal/provider/mock.go`](../../internal/provider/mock.go). Implementa `Provider` con un slice de respuestas predefinidas, semántica opcional `RepeatLast` para tests del tipo "loop infinito", un campo `Err` para ejercitar caminos de error, y captura de llamadas para que los tests puedan hacer aserciones sobre los mensajes y herramientas que el agente fue construyendo:
 
 ```go
-type MockProvider struct {
-	Responses []api.Response
-	calls     int
-}
-
-func (p *MockProvider) Send(ctx context.Context, _ []api.Message, _ []api.ToolDef) (api.Response, error) {
-	if p.calls >= len(p.Responses) {
-		return api.Response{StopReason: api.StopEndTurn}, nil
-	}
-	r := p.Responses[p.calls]
-	p.calls++
-	return r, nil
-}
-
-func (p *MockProvider) Model() string        { return "mock" }
-func (p *MockProvider) SetModel(name string) {}
+p := provider.NewMockProvider(
+    api.Response{
+        StopReason: api.StopToolUse,
+        Content: []api.Block{{Type: api.BlockToolUse, ToolUseID: "t1", ToolName: "echo"}},
+    },
+    api.Response{
+        StopReason: api.StopEndTurn,
+        Content:    []api.Block{{Type: api.BlockText, Text: "done"}},
+    },
+)
+a := agent.New(p, "", reg)
+got, _ := a.Send(ctx, "hi")
+p.LastSent() // mensajes pasados al Send más reciente
+p.Calls()    // cuántas idas y vueltas se ejecutaron
 ```
 
-Inyecta respuestas de texto predefinidas, bloques `tool_use` predefinidos, etc. — útil para pruebas unitarias de la compactación, el bucle del agente, los comandos de barra.
+[`internal/agent/agent_test.go`](../../internal/agent/agent_test.go) lo usa para probar el bucle del agente end-to-end sin consumir tokens de la API: el camino feliz solo-texto, una ida y vuelta con tool-use, el clamp de MaxTurns, y la propagación de errores del proveedor. Copia ese archivo como punto de partida cuando quieras probar tu propio proveedor o estrategia.
 
 ## Rastreo de tokens (opcional)
 

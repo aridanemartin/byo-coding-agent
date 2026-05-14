@@ -88,28 +88,26 @@ Build, run. The rest of the harness is unchanged.
 
 ## Mock provider for tests
 
-A minimal stub that returns canned responses, useful for testing the agent loop without an API key:
+The harness ships one already: [`internal/provider/mock.go`](../../internal/provider/mock.go). It implements `Provider` with a slice of canned responses, optional `RepeatLast` semantics for "loop forever" tests, an `Err` field for exercising error paths, and call-capture so tests can assert on the messages and tools the agent built up:
 
 ```go
-type MockProvider struct {
-	Responses []api.Response
-	calls     int
-}
-
-func (p *MockProvider) Send(ctx context.Context, _ []api.Message, _ []api.ToolDef) (api.Response, error) {
-	if p.calls >= len(p.Responses) {
-		return api.Response{StopReason: api.StopEndTurn}, nil
-	}
-	r := p.Responses[p.calls]
-	p.calls++
-	return r, nil
-}
-
-func (p *MockProvider) Model() string        { return "mock" }
-func (p *MockProvider) SetModel(name string) {}
+p := provider.NewMockProvider(
+    api.Response{
+        StopReason: api.StopToolUse,
+        Content: []api.Block{{Type: api.BlockToolUse, ToolUseID: "t1", ToolName: "echo"}},
+    },
+    api.Response{
+        StopReason: api.StopEndTurn,
+        Content:    []api.Block{{Type: api.BlockText, Text: "done"}},
+    },
+)
+a := agent.New(p, "", reg)
+got, _ := a.Send(ctx, "hi")
+p.LastSent() // messages passed to the most recent Send
+p.Calls()    // how many round-trips ran
 ```
 
-Inject canned text responses, canned `tool_use` blocks, etc. — useful for unit-testing compaction, the agent loop, slash commands.
+[`internal/agent/agent_test.go`](../../internal/agent/agent_test.go) uses it to test the agent loop end-to-end without burning API tokens: a text-only happy path, a tool-use round-trip, the MaxTurns clamp, and provider-error propagation. Copy that file as a starting point when you want to test your own provider or strategy.
 
 ## Token tracking (optional)
 

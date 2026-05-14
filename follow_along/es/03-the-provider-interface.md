@@ -138,6 +138,50 @@ Overhead de traducción — cada llamada `Send` recorre los mensajes y traduce b
 
 Algo de pérdida de features específicos del proveedor. El thinking adaptativo vive en los params de Anthropic, no en nuestra forma genérica. Los campos específicos de Anthropic (`thinking.display`, `output_config.effort`) se configuran al construir el adapter, no se exponen a través de la interfaz. Ese es el tradeoff correcto: las perillas específicas del proveedor se quedan en el paquete del proveedor; el bucle del agente nunca las ve.
 
+## Un alcance inesperado: modelos locales
+
+El primer backend no-Anthropic que la mayoría de la gente quiere es uno local — Ollama, LM Studio, el server de llama.cpp, vLLM. Vale la pena saberlo de entrada: **casi nunca hace falta un tercer adapter.** Cada servidor moderno de modelos locales expone una API *compatible con OpenAI* en una URL configurable. Una vez que tienes un `OpenAIProvider`, apuntarlo a `http://localhost:11434/v1/` es un cambio de una opción al construirlo, no un paquete nuevo.
+
+El SDK de Go de OpenAI acepta una sobreescritura de `BaseURL`. El patrón se ve así:
+
+```go
+// internal/provider/openai.go
+func NewOpenAIProvider(model, system string, maxTokens int64, baseURL string) *OpenAIProvider {
+    opts := []option.RequestOption{}
+    if baseURL != "" {
+        opts = append(opts, option.WithBaseURL(baseURL))
+        // Los servidores locales no validan la API key, pero el SDK se
+        // niega a construirse sin una. Un placeholder es suficiente.
+        if os.Getenv("OPENAI_API_KEY") == "" {
+            opts = append(opts, option.WithAPIKey("local"))
+        }
+    }
+    return &OpenAIProvider{client: openai.NewClient(opts...), /* … */}
+}
+```
+
+Eso es todo. El bucle del agente, las herramientas, la compactación, MCP, debug — todo — ve la misma interfaz `Provider` y no sabe si las respuestas vienen de una API que cuesta $20K en tokens al mes o del GPU de tu portátil. **Para esto era la abstracción.**
+
+Lo que sí cambia es operativo, no arquitectónico:
+
+| Aspecto | Proveedor cloud | Servidor local |
+|---|---|---|
+| Tool calling | Funciona en todo modelo moderno | Funciona en Llama 3.1+, Qwen 2.5+, Mistral con plantilla de tools. Los modelos chicos (Phi-3, Llama 3.2 3B) lo simulan mal — apaga la delegación o elige un modelo más grande. |
+| Latencia | 200–800 ms por turno | 50 ms en un GPU de la serie M, varios segundos en CPU |
+| Ventana de contexto | 200K+ | 8K–128K dependiendo del modelo |
+| Costo | Por token | Cero monetario; el `EstimatedCostUSD()` del harness o devuelve 0 (añade una entrada de pricing con ceros) o -1 (tratar como "desconocido") |
+| Estrictez del schema de tools | Endurecido | Los servidores locales suelen parsear schemas con más laxitud; los bloques tool_use pueden venir con campos extra que el SDK ignora |
+
+Cuándo *sí* escribirías un proveedor local dedicado en vez de reusar el de OpenAI:
+
+- Quieres el endpoint nativo `/api/chat` de Ollama (menos overhead, menos serialización).
+- Necesitas scriptear el servidor — hacer `pull` de un modelo desde dentro del harness, listar modelos disponibles, manejar memoria.
+- Quieres un formato no-chat (raw completion, FIM, etc.) que la capa de compatibilidad con OpenAI no expone.
+
+Para cualquiera de esos casos, copias `openai.go`, cambias el SDK y la URL, y ajustas `toMessages`/`fromResponse` al schema nativo. ~150 líneas. Pero solo deberías hacerlo cuando la capa de compatibilidad se vuelva un cuello de botella real — `WithBaseURL` es el punto de partida correcto para el 90% de los casos de uso de modelos locales.
+
+La lección más amplia: cuando una abstracción se diseña alrededor de la *forma* de una interacción en vez de alrededor de un vendor concreto, absorbe backends nuevos casi gratis. La interfaz Provider definida en este capítulo no se diseñó pensando en modelos locales — y aun así los maneja, porque Ollama y compañía adoptaron la misma forma.
+
 ## Tropiezos
 
 **Orden de iteración de maps.** Al convertir herramientas, el orden de los campos en `InputSchema` está determinado por la iteración de map, que en Go es aleatoria. Dos peticiones con las "mismas" herramientas pueden serializarse a bytes distintos, rompiendo el prompt caching (capítulo 06). El fix es ordenar los nombres de las herramientas antes de emitirlos — vamos a volver a esto cuando construyamos el registry en el capítulo 09.

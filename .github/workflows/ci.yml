@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel any in-progress run for the same PR/branch when a new push arrives,
+# so the status badge always reflects the most recent commit.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: build · vet · test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          # Pin to whatever go.mod declares — the only place the version
+          # is canonical. Bumping go.mod automatically bumps CI.
+          go-version-file: go.mod
+          cache: true
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go build
+        run: go build ./...
+
+      # -race catches data races even with sequential tests — the debug
+      # ring and MockProvider both touch shared state via mutexes, so this
+      # is a real signal.
+      - name: go test
+        run: go test -race -count=1 ./...
