@@ -10,6 +10,12 @@ import (
 
 var spinnerFrames = []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
 
+// SuppressSpinner disables the ANSI carriage-return spinner. The TUI sets
+// this because its own status bar shows the "thinking..." indicator;
+// running the legacy spinner concurrently would write \r escapes that
+// corrupt the rendered frame.
+var SuppressSpinner bool
+
 type Spinner struct {
 	stop chan struct{}
 	done chan struct{}
@@ -18,6 +24,9 @@ type Spinner struct {
 // StartSpinner begins a braille spinner on stdout with the given label.
 // No-op when stdout isn't a TTY (piped, redirected). Call Stop() to clear.
 func StartSpinner(label string) *Spinner {
+	if SuppressSpinner {
+		return &Spinner{}
+	}
 	if !term.IsTerminal(int(os.Stdout.Fd())) {
 		return &Spinner{}
 	}

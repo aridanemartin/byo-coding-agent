@@ -1,12 +1,13 @@
 // Package main wires the harness together. The interesting code lives in
 // the internal/ packages — this file constructs the root Agent, registers
-// any subagents and their delegate tools, and runs the REPL.
+// any subagents and their delegate tools, and launches the Bubble Tea TUI.
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
-	"strings"
+	"os"
 
 	"github.com/anthropics/anthropic-sdk-go"
 
@@ -41,55 +42,70 @@ var rootAgent *agent.Agent
 
 func main() {
 	llm := provider.NewAnthropicProvider(anthropic.ModelClaudeOpus4_7, 8192, systemPrompt)
-
-	// Subagents need to be configured (provider, tool subset) before the
-	// REPL starts. Each one gets registered in subagent.Default and
-	// surfaced to the model via a DelegateTool.
 	registerSubagents(llm)
 
 	rootAgent = agent.New(llm, systemPrompt, tool.Default)
 	rootAgent.Compactor = compact.NoCompaction{}
-	rootAgent.Confirm = ui.Confirm // the root agent asks the user before each tool call
 	rootAgent.MaxTurns = 50
 
-	ctx := context.Background()
-
-	ui.PrintBanner()
-	for {
-		line, ok := ui.ReadChatInput()
-		if !ok {
-			fmt.Println()
-			return
+	// The runner glues the input box to either commands or the agent loop.
+	// Slash commands are handled inline; everything else goes to the agent.
+	runner := func(ctx context.Context, input string) error {
+		if runCommand(input) {
+			return nil
 		}
-		userInput := strings.TrimSpace(line)
-		if userInput == "" {
-			continue
-		}
-
-		if runCommand(userInput) {
-			continue
-		}
-
-		if _, err := rootAgent.Send(ctx, userInput); err != nil {
-			fmt.Printf("api error: %v\n", err)
-		}
+		_, err := rootAgent.Send(ctx, input)
+		return err
 	}
+
+	// Build the Bubble Tea program first — we need its Send() to wire up
+	// the approval flow before the agent ever runs.
+	program := ui.NewProgram(runner)
+
+	// Confirm: a goroutine-safe function the agent calls when it wants y/n.
+	// It posts an ApprovalRequest to the program and waits on the reply
+	// channel. The program's Update flips into stateAwaitingApproval, the
+	// user picks, and we resume.
+	rootAgent.Confirm = func(prompt string) bool {
+		reply := make(chan bool, 1)
+		program.Send(ui.ApprovalRequest{Prompt: prompt, Reply: reply})
+		return <-reply
+	}
+
+	// Redirect stdout into the program. Every existing fmt.Println in the
+	// agent, tools, and commands flows through the pipe → forwarder
+	// goroutine → ui.AppendMsg → viewport. No refactor of print sites.
+	originalStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		fmt.Fprintf(originalStdout, "pipe setup failed: %v\n", err)
+		return
+	}
+	os.Stdout = w
+	ui.SuppressSpinner = true // status bar replaces the legacy spinner
+
+	go func() {
+		scanner := bufio.NewScanner(r)
+		scanner.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
+		for scanner.Scan() {
+			program.Send(ui.AppendMsg(scanner.Text() + "\n"))
+		}
+	}()
+
+	if _, err := program.Run(); err != nil {
+		os.Stdout = originalStdout
+		fmt.Fprintf(originalStdout, "program error: %v\n", err)
+		return
+	}
+	os.Stdout = originalStdout
 }
 
-// registerSubagents wires up every subagent the harness exposes. Each one
-// is constructed with the resources it needs, registered in subagent.Default
-// (so /subagents can list them), and wrapped in a DelegateTool that's
-// registered in tool.Default (so the model can call it).
+// registerSubagents wires up every subagent the harness exposes.
 func registerSubagents(llm provider.Provider) {
-	// Research subagent — read-only file investigation.
 	subagent.Default.Register(subagent.Research{
 		Provider: llm,
 		Tools:    tool.Default.Subset("read_file"),
 	})
-
-	// Expose each registered subagent to the model via a DelegateTool.
-	// (DelegateTool lives in package main to avoid an import cycle —
-	// see delegate.go for the why.)
 	for _, sa := range subagent.Default.All() {
 		tool.Default.Register(&DelegateTool{Subagent: sa})
 	}

@@ -22,17 +22,21 @@ const bigBanner = `
 
 // PrintBanner renders the startup banner. Falls back to a single-line
 // wordmark when the terminal is narrower than the big banner needs.
-func PrintBanner() {
-	if TermWidth() >= bigBannerMinWidth {
-		fmt.Print(BoldCyan, bigBanner, Reset)
-		fmt.Println(Dimmed("              experimental harness · powered by claude"))
-		fmt.Println(Dimmed("              type a message · /help for commands · ctrl-d to exit"))
-	} else {
-		fmt.Println()
-		fmt.Println(Cyan("  BETTATECH") + Dimmed("  ·  experimental harness"))
-		fmt.Println(Dimmed("  type a message or /help"))
+func PrintBanner() { fmt.Print(BannerText(TermWidth())) }
+
+// BannerText returns the banner as a string for callers that want to
+// pre-populate a scrollback buffer (the TUI program) rather than print.
+func BannerText(width int) string {
+	if width == 0 {
+		width = bigBannerMinWidth
 	}
-	fmt.Println()
+	if width >= bigBannerMinWidth {
+		return BoldCyan + bigBanner + Reset +
+			Dimmed("              build your own coding agent") + "\n" +
+			Dimmed("              type a message · /help for commands · ctrl-d to exit") + "\n\n"
+	}
+	return "\n" + Cyan("  BETTATECH") + Dimmed("  ·  build your own coding agent") + "\n" +
+		Dimmed("  type a message or /help") + "\n\n"
 }
 
 // TermWidth returns stdout's terminal width, or 0 when stdout isn't a TTY.

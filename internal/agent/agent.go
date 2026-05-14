@@ -12,7 +12,6 @@ import (
 	"github.com/betta-tech/byo-coding-agent/internal/compact"
 	"github.com/betta-tech/byo-coding-agent/internal/provider"
 	"github.com/betta-tech/byo-coding-agent/internal/tool"
-	"github.com/betta-tech/byo-coding-agent/internal/ui"
 )
 
 // Agent owns one conversation: a provider, a tool registry, a compaction
@@ -67,11 +66,6 @@ func (a *Agent) Send(ctx context.Context, prompt string) (string, error) {
 }
 
 func (a *Agent) loop(ctx context.Context) (string, error) {
-	label := "thinking..."
-	if a.Name != "" {
-		label = a.Name + " thinking..."
-	}
-
 	var finalText strings.Builder
 
 	for turn := 0; turn < a.MaxTurns; turn++ {
@@ -79,14 +73,16 @@ func (a *Agent) loop(ctx context.Context) (string, error) {
 			fmt.Printf("%scompaction error: %v (continuing without)\n", a.LogPrefix, err)
 		} else {
 			if a.Verbose && len(compacted) != len(a.messages) {
-				ui.PrintCompaction(a.messages, compacted)
+				fmt.Printf("--- compaction: %d → %d ---\n", len(a.messages), len(compacted))
+				fmt.Print(api.RenderTranscript(a.messages))
+				fmt.Println("---")
+				fmt.Print(api.RenderTranscript(compacted))
+				fmt.Println("---")
 			}
 			a.messages = compacted
 		}
 
-		sp := ui.StartSpinner(label)
 		resp, err := a.Provider.Send(ctx, a.messages, a.Tools.Definitions())
-		sp.Stop()
 		if err != nil {
 			return finalText.String(), err
 		}
