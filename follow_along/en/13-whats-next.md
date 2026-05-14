@@ -72,6 +72,20 @@ A few features that distinguish a polished product from this harness:
 
 Each of those is a chapter unto itself. None are in this book. If you implement one and want to send a pull request, please do.
 
+## Three layers, the same discipline
+
+The chapters above built a harness from scratch. That's one layer. Two more sit above it — the same discipline applied at higher altitude:
+
+| Layer | What you touch | Where the leverage is |
+|---|---|---|
+| **Building** | The Go code: agent loop, provider, tool registry, compaction | Forms the mental model. ~1% of time. |
+| **Extending** | New code plugged into existing abstractions — MCP wrappers (ch 14), token reporters (ch 16), a new subagent | The bridge. ~10% of time. |
+| **Configuring** | Files the harness reads and prompts you write — `AGENTS.md` (ch 15), `mcp.json`, an SDD workflow, slash-command palettes | Where most real work happens. ~89% of time. |
+
+A poorly-configured Claude Code with a 50 KB self-contradicting `AGENTS.md` feels exactly as broken as a poorly-built harness. Getting either right is the same skill: a small number of orthogonal decisions, made deliberately, with awareness of what they cost. The reason this book emphasizes building is that the mental model only forms when you can see every seam. Once you can, every config file reads differently.
+
+If you came in thinking "configuration isn't real engineering," chapter 14 onward should have settled it: `mcp.json` and `AGENTS.md` reshape the agent's behavior as much as anything in `internal/`. The difference between layers is your blast radius, not the kind of thinking involved.
+
 ## A closing note on harness engineering
 
 You've just built a harness — albeit a small one — for an LLM. The architecture choices weren't accidents: every interface, every layer, every decorator was a deliberate response to a real problem. When you read other harnesses (Claude Code's source, OpenCode, Aider, Continue), you'll see the same shapes. Different colors, different idioms, but the same skeleton: an agent loop, a tool surface, a permission gate, a context manager, a UI.

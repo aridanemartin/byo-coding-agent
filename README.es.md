@@ -10,6 +10,8 @@ El modelo es el motor. El harness es todo lo demás: el bucle que lo invoca, las
 
 Si el harness está bien diseñado, un modelo de gama media se siente excelente. Si está mal diseñado, un modelo de vanguardia se siente roto. La mayoría de las decisiones interesantes en herramientas como Claude Code, OpenCode y Aider viven en sus harness, no en sus modelos.
 
+La ingeniería de harness ocurre en tres niveles — **construir** el bucle y las abstracciones, **extenderlas** con herramientas o integraciones nuevas, y **configurar** el comportamiento mediante archivos como `AGENTS.md` y `mcp.json`. La mayoría del tiempo de quienes trabajan con esto se va al nivel superior; este libro se enfoca en construir porque ahí es donde se forma el modelo mental. Una vez que has construido un harness, lees cada archivo de configuración con ojos nuevos.
+
 Este proyecto es una versión simplificada y legible de esas herramientas, diseñada para ser explorada.
 
 ## Qué vas a construir

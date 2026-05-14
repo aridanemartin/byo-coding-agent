@@ -16,6 +16,20 @@ En la ingeniería de arneses, el modelo (LLM) es el motor. El **arnés (o harnes
 
 El cómo implementamos el arnés alrededor del modelo importa ya que la forma de actuar puede cambiar completamente. Claude Code, OpenCode, Aider y Cursor usan más o menos la misma familia de modelos, pero los productos a veces dan resultados muy distintos.
 
+### Tres niveles
+
+La ingeniería de arneses ocurre en tres niveles, todos con la misma disciplina:
+
+| Nivel | Qué tocas |
+|---|---|
+| **Construir** | El código: bucle del agente, proveedor, registro de herramientas, compactación |
+| **Extender** | Código nuevo que se conecta a las abstracciones existentes — una herramienta nueva, un subagente nuevo, una integración MCP |
+| **Configurar** | Archivos que el arnés lee y prompts que escribes — `AGENTS.md`, paletas de comandos de barra, políticas de permisos, flujos SDD |
+
+Construir te deja cambiar lo que sea; configurar compone más rápido. La mayoría de quienes trabajan con esto pasan ~1% del tiempo construyendo, ~10% extendiendo y el resto configurando — ahí está el apalancamiento. Un Claude Code mal configurado con un `AGENTS.md` de 50 KB lleno de contradicciones se siente exactamente igual de roto que un arnés mal construido; acertar con cualquiera de los dos es la misma habilidad.
+
+Este libro pone el énfasis en construir porque ahí es donde se forja el modelo mental. Una vez que entiendes *por qué* un wrapper `executeTool` se sienta entre el agente y el registro, lees cada archivo de configuración con ojos nuevos.
+
 Este proyecto es una versión reducida y legible de ese tipo de arnés, diseñada especialmente para que trastees con ella, la expandas y la modifiques libremente.
 
 ## Por qué en estilo "constrúyelo tú mismo"

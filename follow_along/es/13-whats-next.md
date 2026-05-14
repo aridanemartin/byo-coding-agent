@@ -72,6 +72,20 @@ Algunas features que distinguen un producto pulido de este harness:
 
 Cada una de esas es un capítulo aparte. Ninguna está en este libro. Si implementas una y quieres mandar un pull request, por favor hazlo.
 
+## Tres niveles, la misma disciplina
+
+Los capítulos anteriores construyeron un harness desde cero. Eso es un nivel. Dos más se asientan encima — la misma disciplina aplicada a mayor altura:
+
+| Nivel | Qué tocas | Dónde está el apalancamiento |
+|---|---|---|
+| **Construir** | El código Go: bucle del agente, proveedor, registro de herramientas, compactación | Forma el modelo mental. ~1% del tiempo. |
+| **Extender** | Código nuevo conectado a abstracciones existentes — wrappers MCP (cap. 14), reporteros de tokens (cap. 16), un subagente nuevo | El puente. ~10% del tiempo. |
+| **Configurar** | Archivos que el harness lee y prompts que escribes — `AGENTS.md` (cap. 15), `mcp.json`, un flujo SDD, paletas de comandos de barra | Donde sucede el trabajo real. ~89% del tiempo. |
+
+Un Claude Code mal configurado con un `AGENTS.md` de 50 KB lleno de contradicciones se siente exactamente igual de roto que un harness mal construido. Acertar con cualquiera de los dos es la misma habilidad: un número pequeño de decisiones ortogonales, tomadas con deliberación, con conciencia de lo que cuestan. La razón por la que este libro pone el énfasis en construir es que el modelo mental solo se forma cuando puedes ver cada costura. Una vez que puedes, cada archivo de configuración se lee distinto.
+
+Si entraste pensando que "la configuración no es ingeniería de verdad", del capítulo 14 en adelante debería haber quedado zanjado: `mcp.json` y `AGENTS.md` reconfiguran el comportamiento del agente tanto como cualquier cosa dentro de `internal/`. La diferencia entre niveles es tu radio de explosión, no la clase de razonamiento que aplicas.
+
 ## Una nota de cierre sobre la ingeniería de harness
 
 Acabas de construir un harness — aunque chico — para un LLM. Las decisiones arquitectónicas no fueron accidentes: cada interfaz, cada capa, cada decorator fue una respuesta deliberada a un problema real. Cuando leas otros harness (el código de Claude Code, OpenCode, Aider, Continue), vas a ver las mismas formas. Distintos colores, distintos idioms, pero el mismo esqueleto: un bucle del agente, una superficie de herramientas, un control de permisos, un manejador de contexto, una UI.

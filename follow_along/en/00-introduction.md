@@ -16,6 +16,20 @@ The model is the engine. The **harness** is everything else: the loop that calls
 
 The discipline matters because the same model behind two different harnesses behaves like two different products. Claude Code, OpenCode, Aider, and Cursor all use roughly the same family of models. Their personalities — fast or careful, transparent or opaque, capable or cautious — live in their harnesses. Get the harness right and a mid-tier model feels great; get it wrong and a frontier model feels broken.
 
+### Three layers
+
+Harness engineering happens at three layers, all using the same discipline:
+
+| Layer | What you touch |
+|---|---|
+| **Building** | The code: agent loop, provider, tool registry, compaction |
+| **Extending** | New code that plugs into existing abstractions — a new tool, a new subagent, an MCP integration |
+| **Configuring** | Files the harness reads and prompts you write — `AGENTS.md`, slash-command palettes, permission policies, SDD workflows |
+
+Building lets you change anything; configuring composes faster. Most practitioners spend ~1% of their time building, ~10% extending, and the rest configuring — that's where the leverage lives. A poorly-configured Claude Code with a 50 KB self-contradicting `AGENTS.md` feels exactly as broken as a poorly-built harness; getting either right is the same skill.
+
+This book emphasizes building because that's where the mental model is forged. Once you understand *why* an `executeTool` wrapper sits between the agent and the registry, you read every config file with new eyes.
+
 This project is a stripped-down, readable version of that kind of harness, designed to be poked at.
 
 ## Why a "build your own" book

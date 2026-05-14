@@ -10,6 +10,8 @@ The model is the engine. The harness is everything else: the loop that calls it,
 
 Get the harness right and a mid-tier model feels great. Get it wrong and a frontier model feels broken. Most of the interesting decisions in tools like Claude Code, OpenCode, and Aider live in their harnesses, not their models.
 
+Harness engineering happens at three layers — **building** the loop and abstractions, **extending** them with new tools or integrations, and **configuring** the behavior via files like `AGENTS.md` and `mcp.json`. Most practitioners spend the bulk of their time in the top layer; this book focuses on building because that's where the mental model is formed. Once you've built one harness, you read every config file with new eyes.
+
 This project is a stripped-down, readable version of those tools, designed to be poked at.
 
 ## What you'll build
