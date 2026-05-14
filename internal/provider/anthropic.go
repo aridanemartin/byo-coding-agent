@@ -1,12 +1,16 @@
-package main
+package provider
 
 import (
 	"context"
 	"encoding/json"
 
 	"github.com/anthropics/anthropic-sdk-go"
+
+	"github.com/betta-tech/byo-coding-agent/internal/api"
 )
 
+// AnthropicProvider is the reference Provider implementation. It is the
+// only file in the harness that imports the Anthropic SDK.
 type AnthropicProvider struct {
 	client    anthropic.Client
 	model     anthropic.Model
@@ -23,7 +27,10 @@ func NewAnthropicProvider(model anthropic.Model, maxTokens int64, system string)
 	}
 }
 
-func (p *AnthropicProvider) Send(ctx context.Context, messages []Message, tools []ToolDef) (Response, error) {
+func (p *AnthropicProvider) Model() string        { return string(p.model) }
+func (p *AnthropicProvider) SetModel(name string) { p.model = anthropic.Model(name) }
+
+func (p *AnthropicProvider) Send(ctx context.Context, messages []api.Message, tools []api.ToolDef) (api.Response, error) {
 	resp, err := p.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     p.model,
 		MaxTokens: p.maxTokens,
@@ -35,17 +42,17 @@ func (p *AnthropicProvider) Send(ctx context.Context, messages []Message, tools 
 		},
 	})
 	if err != nil {
-		return Response{}, err
+		return api.Response{}, err
 	}
 
-	out := Response{StopReason: fromStopReason(resp.StopReason)}
+	out := api.Response{StopReason: fromStopReason(resp.StopReason)}
 	for _, block := range resp.Content {
 		switch v := block.AsAny().(type) {
 		case anthropic.TextBlock:
-			out.Content = append(out.Content, Block{Type: BlockText, Text: v.Text})
+			out.Content = append(out.Content, api.Block{Type: api.BlockText, Text: v.Text})
 		case anthropic.ToolUseBlock:
-			out.Content = append(out.Content, Block{
-				Type:      BlockToolUse,
+			out.Content = append(out.Content, api.Block{
+				Type:      api.BlockToolUse,
 				ToolUseID: v.ID,
 				ToolName:  v.Name,
 				ToolInput: v.JSON.Input.Raw(),
@@ -55,15 +62,15 @@ func (p *AnthropicProvider) Send(ctx context.Context, messages []Message, tools 
 	return out, nil
 }
 
-func (p *AnthropicProvider) toMessages(messages []Message) []anthropic.MessageParam {
+func (p *AnthropicProvider) toMessages(messages []api.Message) []anthropic.MessageParam {
 	out := make([]anthropic.MessageParam, 0, len(messages))
 	for _, m := range messages {
 		blocks := make([]anthropic.ContentBlockParamUnion, 0, len(m.Content))
 		for _, b := range m.Content {
 			switch b.Type {
-			case BlockText:
+			case api.BlockText:
 				blocks = append(blocks, anthropic.NewTextBlock(b.Text))
-			case BlockToolUse:
+			case api.BlockToolUse:
 				blocks = append(blocks, anthropic.ContentBlockParamUnion{
 					OfToolUse: &anthropic.ToolUseBlockParam{
 						ID:    b.ToolUseID,
@@ -71,21 +78,21 @@ func (p *AnthropicProvider) toMessages(messages []Message) []anthropic.MessagePa
 						Input: json.RawMessage(b.ToolInput),
 					},
 				})
-			case BlockToolResult:
+			case api.BlockToolResult:
 				blocks = append(blocks, anthropic.NewToolResultBlock(b.ToolUseID, b.ToolResult, b.IsError))
 			}
 		}
 		switch m.Role {
-		case RoleUser:
+		case api.RoleUser:
 			out = append(out, anthropic.NewUserMessage(blocks...))
-		case RoleAssistant:
+		case api.RoleAssistant:
 			out = append(out, anthropic.NewAssistantMessage(blocks...))
 		}
 	}
 	return out
 }
 
-func (p *AnthropicProvider) toTools(tools []ToolDef) []anthropic.ToolUnionParam {
+func (p *AnthropicProvider) toTools(tools []api.ToolDef) []anthropic.ToolUnionParam {
 	out := make([]anthropic.ToolUnionParam, 0, len(tools))
 	for _, t := range tools {
 		out = append(out, anthropic.ToolUnionParam{
@@ -102,16 +109,13 @@ func (p *AnthropicProvider) toTools(tools []ToolDef) []anthropic.ToolUnionParam 
 	return out
 }
 
-func (p *AnthropicProvider) Model() string         { return string(p.model) }
-func (p *AnthropicProvider) SetModel(name string)  { p.model = anthropic.Model(name) }
-
-func fromStopReason(s anthropic.StopReason) StopReason {
+func fromStopReason(s anthropic.StopReason) api.StopReason {
 	switch s {
 	case anthropic.StopReasonEndTurn:
-		return StopEndTurn
+		return api.StopEndTurn
 	case anthropic.StopReasonToolUse:
-		return StopToolUse
+		return api.StopToolUse
 	default:
-		return StopOther
+		return api.StopOther
 	}
 }

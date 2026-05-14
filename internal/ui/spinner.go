@@ -1,4 +1,4 @@
-package main
+package ui
 
 import (
 	"fmt"
@@ -10,18 +10,18 @@ import (
 
 var spinnerFrames = []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
 
-type spinner struct {
+type Spinner struct {
 	stop chan struct{}
 	done chan struct{}
 }
 
-// startSpinner begins a braille spinner on stdout with the given label.
+// StartSpinner begins a braille spinner on stdout with the given label.
 // No-op when stdout isn't a TTY (piped, redirected). Call Stop() to clear.
-func startSpinner(label string) *spinner {
+func StartSpinner(label string) *Spinner {
 	if !term.IsTerminal(int(os.Stdout.Fd())) {
-		return &spinner{}
+		return &Spinner{}
 	}
-	s := &spinner{
+	s := &Spinner{
 		stop: make(chan struct{}),
 		done: make(chan struct{}),
 	}
@@ -37,8 +37,8 @@ func startSpinner(label string) *spinner {
 				return
 			case <-ticker.C:
 				fmt.Printf("\r%s%c%s %s%s%s",
-					ansiBoldCyan, spinnerFrames[i], ansiReset,
-					ansiDim, label, ansiReset)
+					BoldCyan, spinnerFrames[i], Reset,
+					Dim, label, Reset)
 				i = (i + 1) % len(spinnerFrames)
 			}
 		}
@@ -47,7 +47,7 @@ func startSpinner(label string) *spinner {
 }
 
 // Stop must be called exactly once per started spinner.
-func (s *spinner) Stop() {
+func (s *Spinner) Stop() {
 	if s.stop == nil {
 		return // no-op spinner (non-TTY)
 	}

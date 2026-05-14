@@ -1,4 +1,4 @@
-package main
+package ui
 
 import (
 	"bufio"
@@ -18,9 +18,9 @@ var (
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("36")). // cyan
 			Padding(0, 1)
-	hintStyle    = lipgloss.NewStyle().Faint(true)
-	promptStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("36")).Bold(true)
-	confirmMark  = lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true) // yellow
+	hintStyle   = lipgloss.NewStyle().Faint(true)
+	promptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("36")).Bold(true)
+	confirmMark = lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true) // yellow
 )
 
 // ── main message input ────────────────────────────────────────────────────
@@ -64,7 +64,6 @@ func (m chatInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.done = true
 			return m, tea.Quit
 		case tea.KeyCtrlD:
-			// Only exit on ctrl-d when the buffer is empty (mirrors common shells).
 			if m.ti.Value() == "" {
 				return m, tea.Quit
 			}
@@ -106,7 +105,7 @@ func (m chatInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m chatInputModel) View() string {
-	w := m.width - 2 // account for border
+	w := m.width - 2
 	if w < 20 {
 		w = 20
 	}
@@ -115,10 +114,10 @@ func (m chatInputModel) View() string {
 	return box + "\n" + hint
 }
 
-// readChatInput shows the bordered input box and blocks until the user submits
-// or hits ctrl-d. Returns (text, ok). ok=false on exit.
-func readChatInput() (string, bool) {
-	w := termWidth()
+// ReadChatInput shows the bordered input box and blocks until the user
+// submits or hits ctrl-d. Returns (text, ok). ok=false on exit.
+func ReadChatInput() (string, bool) {
+	w := TermWidth()
 	if w == 0 {
 		w = 80
 	}
@@ -161,13 +160,12 @@ func (m confirmModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m confirmModel) View() string {
-	return confirmMark.Render(" ? ") + m.prompt +
-		hintStyle.Render(" (y/n) ")
+	return confirmMark.Render(" ? ") + m.prompt + hintStyle.Render(" (y/n) ")
 }
 
-// confirm shows a single-line y/n prompt and returns the user's answer.
+// Confirm shows a single-line y/n prompt and returns the user's answer.
 // Default (Enter, Esc, Ctrl-C) is deny — safer for destructive tools.
-func confirm(prompt string) bool {
+func Confirm(prompt string) bool {
 	final, err := tea.NewProgram(confirmModel{prompt: prompt}).Run()
 	if err != nil {
 		return false

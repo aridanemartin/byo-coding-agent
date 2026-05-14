@@ -1,17 +1,19 @@
-package main
+package tool
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/betta-tech/byo-coding-agent/internal/api"
 )
 
 type WriteFileTool struct{}
 
-func init() { registry.Register(&WriteFileTool{}) }
+func init() { Default.Register(&WriteFileTool{}) }
 
-func (WriteFileTool) Definition() ToolDef {
-	return ToolDef{
+func (WriteFileTool) Definition() api.ToolDef {
+	return api.ToolDef{
 		Name:        "write_file",
 		Description: "Write content to a file at the given path. Creates or overwrites.",
 		InputSchema: map[string]any{

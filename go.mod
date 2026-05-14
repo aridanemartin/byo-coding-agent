@@ -1,4 +1,4 @@
-module harness
+module github.com/betta-tech/byo-coding-agent
 
 go 1.26.1
 

@@ -1,17 +1,19 @@
-package main
+package tool
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/betta-tech/byo-coding-agent/internal/api"
 )
 
 type ReadFileTool struct{}
 
-func init() { registry.Register(&ReadFileTool{}) }
+func init() { Default.Register(&ReadFileTool{}) }
 
-func (ReadFileTool) Definition() ToolDef {
-	return ToolDef{
+func (ReadFileTool) Definition() api.ToolDef {
+	return api.ToolDef{
 		Name:        "read_file",
 		Description: "Read the contents of a file at the given path.",
 		InputSchema: map[string]any{

@@ -1,17 +1,19 @@
-package main
+package tool
 
 import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+
+	"github.com/betta-tech/byo-coding-agent/internal/api"
 )
 
-type BashTool struct{}
+type GitDiffTool struct{}
 
-func init() { registry.Register(&BashTool{}) }
+func init() { Default.Register(&BashTool{}) }
 
-func (BashTool) Definition() ToolDef {
-	return ToolDef{
+func (GitDiffTool) Definition() api.ToolDef {
+	return api.ToolDef{
 		Name:        "bash",
 		Description: "Run a shell command. Returns combined stdout and stderr.",
 		InputSchema: map[string]any{
@@ -24,7 +26,7 @@ func (BashTool) Definition() ToolDef {
 	}
 }
 
-func (BashTool) Execute(rawInput string) (string, bool) {
+func (GitDiffTool) Execute(rawInput string) (string, bool) {
 	var in struct {
 		Command string `json:"command"`
 	}

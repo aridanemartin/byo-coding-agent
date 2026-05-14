@@ -6,6 +6,9 @@ import (
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/betta-tech/byo-coding-agent/internal/compact"
+	"github.com/betta-tech/byo-coding-agent/internal/ui"
 )
 
 type command struct {
@@ -65,14 +68,14 @@ func cmdHelp(_ string) {
 		names = append(names, n)
 	}
 	sort.Strings(names)
-	fmt.Println(ansiDim + "available commands:" + ansiReset)
+	fmt.Println(ui.Dimmed("available commands:"))
 	for _, n := range names {
 		c := commands[n]
 		display := "/" + n
 		if c.usage != "" {
 			display = c.usage
 		}
-		fmt.Printf("  %-20s %s%s%s\n", display, ansiDim, c.description, ansiReset)
+		fmt.Printf("  %-20s %s\n", display, ui.Dimmed(c.description))
 	}
 }
 
@@ -87,29 +90,27 @@ var knownModels = []string{
 
 func cmdModel(args string) {
 	if args == "" {
-		fmt.Printf("current: %s%s%s\n", ansiBoldCyan, provider.Model(), ansiReset)
-		fmt.Println(ansiDim + "suggestions:" + ansiReset)
+		fmt.Printf("current: %s\n", ui.Cyan(llm.Model()))
+		fmt.Println(ui.Dimmed("suggestions:"))
 		for _, m := range knownModels {
 			fmt.Printf("  %s\n", m)
 		}
-		fmt.Println(ansiDim + "(or pass any model id — validated on next call)" + ansiReset)
+		fmt.Println(ui.Dimmed("(or pass any model id — validated on next call)"))
 		return
 	}
-	provider.SetModel(args)
-	fmt.Printf("model: %s%s%s\n", ansiBoldCyan, args, ansiReset)
+	llm.SetModel(args)
+	fmt.Printf("model: %s\n", ui.Cyan(args))
 }
 
 func cmdClear(_ string) {
 	messages = messages[:0]
-	fmt.Println(ansiDim + "conversation cleared" + ansiReset)
+	fmt.Println(ui.Dimmed("conversation cleared"))
 }
 
 func cmdTools(_ string) {
-	fmt.Println(ansiDim + "tools available:" + ansiReset)
+	fmt.Println(ui.Dimmed("tools available:"))
 	for _, t := range registry.Definitions() {
-		fmt.Printf("  %s%s%s  %s%s%s\n",
-			ansiBoldCyan, t.Name, ansiReset,
-			ansiDim, t.Description, ansiReset)
+		fmt.Printf("  %s  %s\n", ui.Cyan(t.Name), ui.Dimmed(t.Description))
 	}
 }
 
@@ -119,11 +120,11 @@ func cmdCompact(args string) {
 	case "":
 		// use the configured compactor
 	case "sliding":
-		strategy = &SlidingWindow{KeepLast: 6}
+		strategy = &compact.SlidingWindow{KeepLast: 6}
 	case "summarize":
-		strategy = &Summarize{Provider: provider, Threshold: 0, KeepRecent: 4}
+		strategy = &compact.Summarize{Provider: llm, Threshold: 0, KeepRecent: 4}
 	case "none":
-		strategy = NoCompaction{}
+		strategy = compact.NoCompaction{}
 	default:
 		fmt.Printf("unknown strategy: %s (try sliding, summarize, or none)\n", args)
 		return
@@ -136,9 +137,9 @@ func cmdCompact(args string) {
 		return
 	}
 	messages = compacted
-	fmt.Printf("%scompacted: %d → %d messages%s\n", ansiDim, len(before), len(compacted), ansiReset)
+	fmt.Printf("%s\n", ui.Dimmed(fmt.Sprintf("compacted: %d → %d messages", len(before), len(compacted))))
 	if verbose && len(before) != len(compacted) {
-		printCompaction(before, compacted)
+		ui.PrintCompaction(before, compacted)
 	}
 }
 

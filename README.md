@@ -1,5 +1,7 @@
 # Build Your Own Coding Agent
 
+🌐 **Languages:** **English** · [Español](README.es.md)
+
 A hands-on introduction to **harness engineering** — the discipline of building the scaffolding around an LLM that turns it into a useful agent. You'll build a working AI coding agent in Go, then experiment with the parts that matter: providers, tools, compaction strategies, and permissions.
 
 ## What is harness engineering?
@@ -43,44 +45,44 @@ Type `/help` to see commands. Try:
 
 ## Architecture in 60 seconds
 
-The harness is built around three orthogonal extension points. Each one is an interface with a small surface; swapping implementations is one line.
+The harness is built around three orthogonal extension points. Each lives in its own `internal/` package, with a small interface and an in-tree default implementation. Swapping is one line.
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  main.go    REPL · agent loop · package state       │
+│  main.go        wiring · REPL loop · agent loop     │
+│  commands.go    /help · /model · /compact · …       │
 └─────────────────────────────────────────────────────┘
         │
-        ├── Provider                  (provider.go, anthropic.go)
+        ├── internal/api/             shared types (Message, Block, ToolDef, …)
+        │
+        ├── internal/provider/        Provider interface + Anthropic impl
         │     Send messages → get response. Swap to add OpenAI etc.
         │
-        ├── Tool                      (tool.go, tool_*.go)
-        │     Self-contained capability (schema + behavior).
+        ├── internal/tool/            Tool interface + Registry + one file per tool
         │     Self-registers via init() — drop a file in, it appears.
         │
-        ├── CompactionStrategy        (compact.go)
-        │     Shrink history before each turn.
-        │     SlidingWindow, Summarize, NoCompaction, …
+        ├── internal/compact/         CompactionStrategy interface + strategies
+        │     SlidingWindow, Summarize, NoCompaction, WithLogging decorator.
         │
-        └── UI                        (input.go, banner.go, spinner.go)
-              TUI input, banner, loading animation. Readable but less interesting.
+        └── internal/ui/              Banner, spinner, Bubble Tea input, styles
+              TUI affordances. Readable but less interesting.
 ```
 
 ## Project layout
 
-| File | What's in it |
-|---|---|
-| `main.go` | REPL loop, agent loop, package state, `executeTool` wrapper |
-| `provider.go` | `Provider` interface + generic types (`Message`, `Block`, `ToolDef`, `Response`) |
-| `anthropic.go` | Anthropic SDK adapter — the only file that imports the SDK |
-| `tool.go` | `Tool` interface, `ToolRegistry`, the global `registry` |
-| `tool_bash.go` | Shell command tool |
-| `tool_read_file.go` | Read a file from disk |
-| `tool_write_file.go` | Write a file to disk |
-| `compact.go` | `CompactionStrategy` interface + 3 implementations + `WithLogging` decorator |
-| `commands.go` | Slash command registry — `/help`, `/model`, `/compact`, … |
-| `input.go` | Bubble Tea-based TUI input + confirm prompts |
-| `banner.go` | Startup banner (responsive — falls back to plain text in narrow terminals) |
-| `spinner.go` | Loading spinner during API calls |
+```
+.
+├── main.go              wiring + REPL + agent loop + executeTool wrapper
+├── commands.go          slash command registry
+└── internal/
+    ├── api/             Message, Block, ToolDef, Response, RenderTranscript
+    ├── provider/        Provider interface + AnthropicProvider
+    ├── tool/            Tool interface + Registry + bash / readfile / writefile
+    ├── compact/         CompactionStrategy + SlidingWindow / Summarize / Logging
+    └── ui/              banner, spinner, input (Bubble Tea), styling helpers
+```
+
+`internal/` is enforced by the Go compiler — packages in there can only be imported by code in this same module, which is the right signal for "these aren't meant to be reused as a library."
 
 ## The three extension points
 
@@ -99,27 +101,31 @@ type Provider interface {
 Then change one line in `main.go`:
 
 ```go
-provider = NewOpenAIProvider(...)  // instead of NewAnthropicProvider
+llm = provider.NewOpenAIProvider(...)  // instead of provider.NewAnthropicProvider
 ```
 
-The adapter is the only place that knows the SDK's wire format. The rest of the harness deals in generic `Message` / `Block` / `ToolDef` types. See `anthropic.go` for the reference.
+The adapter is the only place that knows the SDK's wire format. The rest of the harness deals in generic `Message` / `Block` / `ToolDef` types. See `internal/provider/anthropic.go` for the reference.
 
 ### 2. Tools
 
-Want to add `git_diff`, `web_search`, `kubectl`? Create **one file**:
+Want to add `git_diff`, `web_search`, `kubectl`? Create **one file** under `internal/tool/`:
 
 ```go
-// tool_git_diff.go
-package main
+// internal/tool/gitdiff.go
+package tool
 
-import "os/exec"
+import (
+    "os/exec"
+
+    "github.com/betta-tech/byo-coding-agent/internal/api"
+)
 
 type GitDiffTool struct{}
 
-func init() { registry.Register(&GitDiffTool{}) }
+func init() { Default.Register(&GitDiffTool{}) }
 
-func (GitDiffTool) Definition() ToolDef {
-    return ToolDef{
+func (GitDiffTool) Definition() api.ToolDef {
+    return api.ToolDef{
         Name:        "git_diff",
         Description: "Show uncommitted changes in the current repo.",
         InputSchema: map[string]any{},
@@ -134,7 +140,7 @@ func (GitDiffTool) Execute(_ string) (string, bool) {
 }
 ```
 
-Drop the file in. Run `go run .`. Type `/tools` — `git_diff` is in the list, the model can call it. **No edits to `main.go`** — the `init()` function registers the tool when the package loads.
+Drop the file in. Run `go run .`. Type `/tools` — `git_diff` is in the list, the model can call it. **No edits to `main.go`** — `main` already imports `internal/tool`, so the new file's `init()` runs when the package loads.
 
 ### 3. Compaction strategies
 
@@ -150,19 +156,19 @@ Three are included:
 
 | Strategy | What it does |
 |---|---|
-| `NoCompaction{}` | Default — never modifies messages |
-| `&SlidingWindow{KeepLast: 10}` | Keeps the last N messages, drops older |
-| `&Summarize{Provider: p, Threshold: 20, KeepRecent: 6}` | Asks the model to summarize old turns once history hits `Threshold` |
+| `compact.NoCompaction{}` | Default — never modifies messages |
+| `&compact.SlidingWindow{KeepLast: 10}` | Keeps the last N messages, drops older |
+| `&compact.Summarize{Provider: llm, Threshold: 20, KeepRecent: 6}` | Asks the model to summarize old turns once history hits `Threshold` |
 
-Wrap any of them with `WithLogging(inner, "compactions.log")` to record before/after diffs to a file — useful for comparing strategies.
+Wrap any of them with `compact.WithLogging(inner, "compactions.log")` to record before/after diffs to a file — useful for comparing strategies.
 
 Swap by changing one line in `main.go`:
 
 ```go
-compactor = &Summarize{Provider: provider, Threshold: 20, KeepRecent: 6}
+compactor = &compact.Summarize{Provider: llm, Threshold: 20, KeepRecent: 6}
 ```
 
-There's a subtle bit: a naive truncation can leave a `tool_use` block without its matching `tool_result`, and the API will 400. The `safeSplitPoint` helper in `compact.go` walks back until it finds a "clean" boundary. All strategies route through it.
+There's a subtle bit: a naive truncation can leave a `tool_use` block without its matching `tool_result`, and the API will 400. The `SafeSplitPoint` helper in `internal/compact/strategy.go` walks back until it finds a "clean" boundary. All strategies route through it.
 
 ## Commands
 

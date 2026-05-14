@@ -1,3 +1,6 @@
+// Package main wires the harness together. The interesting code lives in
+// the internal/ packages — this file is just the REPL, the agent loop, and
+// the bits of glue that depend on more than one extension point.
 package main
 
 import (
@@ -6,6 +9,12 @@ import (
 	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
+
+	"github.com/betta-tech/byo-coding-agent/internal/api"
+	"github.com/betta-tech/byo-coding-agent/internal/compact"
+	"github.com/betta-tech/byo-coding-agent/internal/provider"
+	"github.com/betta-tech/byo-coding-agent/internal/tool"
+	"github.com/betta-tech/byo-coding-agent/internal/ui"
 )
 
 const systemPrompt = `You are a coding assistant running in a terminal harness. You have three tools:
@@ -17,28 +26,30 @@ const systemPrompt = `You are a coding assistant running in a terminal harness. 
 Use the tools to accomplish what the user asks. Be concise.`
 
 // Package-level state so /commands can read and mutate it. The whole REPL
-// runs on one goroutine, so no locking is needed.
+// runs on one goroutine, so no locking is needed. Named `llm` rather than
+// `provider` to avoid shadowing the package name.
 var (
-	provider  Provider
-	compactor CompactionStrategy = NoCompaction{}
-	messages  []Message
+	llm       provider.Provider
+	compactor compact.CompactionStrategy = compact.NoCompaction{}
+	messages  []api.Message
+	registry                             = tool.Default
 )
 
 func main() {
 	// Swap this line to swap providers — that's the whole point of the abstraction.
-	provider = NewAnthropicProvider(anthropic.ModelClaudeOpus4_7, 8192, systemPrompt)
+	llm = provider.NewAnthropicProvider(anthropic.ModelClaudeOpus4_7, 8192, systemPrompt)
 
 	// Swap this line to swap compaction strategies. NoCompaction by default;
-	// try &SlidingWindow{KeepLast: 10} or &Summarize{Provider: provider, ...}.
-	// Wrap any strategy with WithLogging(inner, "path.log") to dump before/after
-	// transcripts on each compaction event.
-	compactor = NoCompaction{}
+	// try &compact.SlidingWindow{KeepLast: 10} or &compact.Summarize{Provider: llm, ...}.
+	// Wrap any strategy with compact.WithLogging(inner, "path.log") to dump
+	// before/after transcripts on each compaction event.
+	compactor = compact.NoCompaction{}
 
 	ctx := context.Background()
 
-	printBanner()
+	ui.PrintBanner()
 	for {
-		line, ok := readChatInput()
+		line, ok := ui.ReadChatInput()
 		if !ok {
 			fmt.Println()
 			return
@@ -52,9 +63,9 @@ func main() {
 			continue
 		}
 
-		messages = append(messages, Message{
-			Role:    RoleUser,
-			Content: []Block{{Type: BlockText, Text: userInput}},
+		messages = append(messages, api.Message{
+			Role:    api.RoleUser,
+			Content: []api.Block{{Type: api.BlockText, Text: userInput}},
 		})
 		agentLoop(ctx)
 	}
@@ -68,33 +79,32 @@ func agentLoop(ctx context.Context) {
 			fmt.Printf("compaction error: %v (continuing without)\n", err)
 		} else {
 			if verbose && len(compacted) != len(messages) {
-				printCompaction(messages, compacted)
+				ui.PrintCompaction(messages, compacted)
 			}
 			messages = compacted
 		}
 
-		sp := startSpinner("thinking...")
-		resp, err := provider.Send(ctx, messages, registry.Definitions())
+		sp := ui.StartSpinner("thinking...")
+		resp, err := llm.Send(ctx, messages, registry.Definitions())
 		sp.Stop()
 		if err != nil {
 			fmt.Printf("api error: %v\n", err)
 			return
 		}
 
-		// Record the assistant turn verbatim — tool_use blocks and all.
-		messages = append(messages, Message{Role: RoleAssistant, Content: resp.Content})
+		messages = append(messages, api.Message{Role: api.RoleAssistant, Content: resp.Content})
 
-		var toolResults []Block
+		var toolResults []api.Block
 		for _, b := range resp.Content {
 			switch b.Type {
-			case BlockText:
+			case api.BlockText:
 				if b.Text != "" {
 					fmt.Println(b.Text)
 				}
-			case BlockToolUse:
+			case api.BlockToolUse:
 				result, isErr := executeTool(b.ToolName, b.ToolInput)
-				toolResults = append(toolResults, Block{
-					Type:       BlockToolResult,
+				toolResults = append(toolResults, api.Block{
+					Type:       api.BlockToolResult,
 					ToolUseID:  b.ToolUseID,
 					ToolResult: result,
 					IsError:    isErr,
@@ -102,20 +112,20 @@ func agentLoop(ctx context.Context) {
 			}
 		}
 
-		if resp.StopReason != StopToolUse {
+		if resp.StopReason != api.StopToolUse {
 			return
 		}
 
-		messages = append(messages, Message{Role: RoleUser, Content: toolResults})
+		messages = append(messages, api.Message{Role: api.RoleUser, Content: toolResults})
 	}
 }
 
 // executeTool is the harness-side wrapper around a tool call: logging,
 // approval gate, then dispatch to the registry. The tool's actual behavior
-// lives in its own file (tool_bash.go, tool_read_file.go, etc.).
-func executeTool(name string, rawInput string) (string, bool) {
+// lives in its own file under internal/tool/.
+func executeTool(name, rawInput string) (string, bool) {
 	fmt.Printf("[tool] %s %s\n", name, rawInput)
-	if !confirm("approve?") {
+	if !ui.Confirm("approve?") {
 		return "user denied this tool call", true
 	}
 	return registry.Execute(name, rawInput)
