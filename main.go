@@ -13,6 +13,7 @@ import (
 
 	"github.com/betta-tech/byo-coding-agent/internal/agent"
 	"github.com/betta-tech/byo-coding-agent/internal/compact"
+	"github.com/betta-tech/byo-coding-agent/internal/mcp"
 	"github.com/betta-tech/byo-coding-agent/internal/provider"
 	"github.com/betta-tech/byo-coding-agent/internal/subagent"
 	"github.com/betta-tech/byo-coding-agent/internal/tool"
@@ -42,6 +43,19 @@ var rootAgent *agent.Agent
 
 func main() {
 	llm := provider.NewAnthropicProvider(anthropic.ModelClaudeOpus4_7, 8192, systemPrompt)
+
+	// MCP servers are opt-in via mcp.json. If the file is absent, no servers
+	// are launched; if it's present, each entry registers its tools into
+	// tool.Default before subagents claim subsets.
+	mcpCtx, cancelMCP := context.WithCancel(context.Background())
+	defer cancelMCP()
+	mcpClients := setupMCP(mcpCtx)
+	defer func() {
+		for _, c := range mcpClients {
+			_ = c.Close()
+		}
+	}()
+
 	registerSubagents(llm)
 
 	rootAgent = agent.New(llm, systemPrompt, tool.Default)
@@ -98,6 +112,17 @@ func main() {
 		return
 	}
 	os.Stdout = originalStdout
+}
+
+// setupMCP loads mcp.json (if present) and connects each configured server.
+// Errors connecting individual servers are logged but never fatal.
+func setupMCP(ctx context.Context) []*mcp.Client {
+	cfg, err := mcp.LoadConfig("mcp.json")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "mcp: config error: %v\n", err)
+		return nil
+	}
+	return mcp.Register(ctx, cfg, tool.Default)
 }
 
 // registerSubagents wires up every subagent the harness exposes.

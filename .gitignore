@@ -4,6 +4,9 @@ harness
 # Runtime artifacts (compaction logs, etc.)
 *.log
 
+# Local MCP server config — may contain auth tokens. Track mcp.example.json instead.
+mcp.json
+
 # Editor / IDE
 .idea/
 .vscode/

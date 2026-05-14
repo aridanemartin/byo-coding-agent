@@ -23,6 +23,14 @@ Read in order. Each chapter is short (5–10 min) and focuses on one design deci
 | [12](12-full-tui.md) | The full TUI | A proper Bubble Tea program with viewport, scrollback, approval flow |
 | [13](13-whats-next.md) | What's next | Exercises, what we deliberately skipped, and where to take it |
 
+## Extras
+
+Standalone chapters that extend the harness with concrete integrations. They build on the architecture from chapters 01–13 but aren't part of the core arc — read them when you want the feature, skip them when you don't.
+
+| # | Title | What it covers |
+|---|---|---|
+| [14](14-mcp-support.md) | Adding MCP support | Wrapping remote Model Context Protocol servers behind the `Tool` interface |
+
 ## How to read this
 
 If you want the **fastest tour**: read chapter 00, then skim chapters 01, 09, 11 (the three core abstractions: agent loop, tools, subagents). Everything else is layered polish.

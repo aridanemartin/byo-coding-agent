@@ -23,6 +23,14 @@ Léelo en orden. Cada capítulo es corto (5–10 min) y se enfoca en una sola de
 | [12](12-full-tui.md) | La TUI completa | Un programa Bubble Tea de verdad, con viewport, scrollback y flujo de aprobación |
 | [13](13-whats-next.md) | Qué sigue | Ejercicios, lo que omitimos a propósito, y hacia dónde llevarlo |
 
+## Extras
+
+Capítulos independientes que extienden el harness con integraciones concretas. Se apoyan en la arquitectura de los capítulos 01–13 pero no son parte del arco central — léelos cuando quieras la feature, sáltatelos cuando no.
+
+| # | Título | De qué trata |
+|---|---|---|
+| [14](14-mcp-support.md) | Agregando soporte de MCP | Envolver servidores remotos del Model Context Protocol detrás de la interfaz `Tool` |
+
 ## Cómo leer esto
 
 Si quieres el **recorrido más rápido**: lee el capítulo 00, después hojea los capítulos 01, 09 y 11 (las tres abstracciones centrales: bucle del agente, herramientas y subagentes). Todo lo demás es pulido en capas.
