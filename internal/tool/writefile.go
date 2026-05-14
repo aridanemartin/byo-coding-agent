@@ -1,6 +1,7 @@
 package tool
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -30,7 +31,7 @@ func (WriteFileTool) Definition() api.ToolDef {
 	}
 }
 
-func (WriteFileTool) Execute(rawInput string) (string, bool) {
+func (WriteFileTool) Execute(_ context.Context, rawInput string) (string, bool) {
 	var in struct {
 		Path    string `json:"path"`
 		Content string `json:"content"`

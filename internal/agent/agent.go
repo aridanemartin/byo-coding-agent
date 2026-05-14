@@ -1,0 +1,139 @@
+// Package agent encapsulates the agent loop. The root REPL holds one
+// Agent; subagents (spawned by the delegate tool) are additional Agents
+// with their own state, system prompt, and tool subset.
+package agent
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/betta-tech/byo-coding-agent/internal/api"
+	"github.com/betta-tech/byo-coding-agent/internal/compact"
+	"github.com/betta-tech/byo-coding-agent/internal/provider"
+	"github.com/betta-tech/byo-coding-agent/internal/tool"
+	"github.com/betta-tech/byo-coding-agent/internal/ui"
+)
+
+// Agent owns one conversation: a provider, a tool registry, a compaction
+// strategy, and a slice of messages. The same struct serves the root REPL
+// and any subagents.
+type Agent struct {
+	Name      string                     // shown in the spinner label; "" for root
+	Provider  provider.Provider          //
+	Tools     *tool.Registry             // curated registry for this agent
+	Compactor compact.CompactionStrategy //
+	System    string                     // system prompt
+	MaxTurns  int                        // hard cap on tool-use iterations
+	Verbose   bool                       // print compaction before/after
+	LogPrefix string                     // prefix for tool-call log lines
+	Quiet     bool                       // suppress assistant-text printing (set for subagents)
+	Confirm   func(prompt string) bool   // nil = auto-approve every tool call
+
+	messages []api.Message
+}
+
+func New(p provider.Provider, system string, tools *tool.Registry) *Agent {
+	return &Agent{
+		Provider:  p,
+		Tools:     tools,
+		System:    system,
+		Compactor: compact.NoCompaction{},
+		MaxTurns:  20,
+	}
+}
+
+// Messages returns the agent's conversation slice. Callers (e.g. /compact)
+// may read it, but should not mutate it directly — use SetMessages instead.
+func (a *Agent) Messages() []api.Message { return a.messages }
+
+// SetMessages replaces the conversation slice. Used by /compact to write
+// back the result of an ad-hoc strategy.
+func (a *Agent) SetMessages(m []api.Message) { a.messages = m }
+
+// ClearMessages wipes the conversation history.
+func (a *Agent) ClearMessages() { a.messages = a.messages[:0] }
+
+// Send appends a user message and runs the tool-use loop until the model
+// stops requesting tools (or MaxTurns is reached). Returns the final
+// assistant text concatenation, which is printed live as it arrives for
+// the root agent and silently accumulated for subagents.
+func (a *Agent) Send(ctx context.Context, prompt string) (string, error) {
+	a.messages = append(a.messages, api.Message{
+		Role:    api.RoleUser,
+		Content: []api.Block{{Type: api.BlockText, Text: prompt}},
+	})
+	return a.loop(ctx)
+}
+
+func (a *Agent) loop(ctx context.Context) (string, error) {
+	label := "thinking..."
+	if a.Name != "" {
+		label = a.Name + " thinking..."
+	}
+
+	var finalText strings.Builder
+
+	for turn := 0; turn < a.MaxTurns; turn++ {
+		if compacted, err := a.Compactor.Compact(ctx, a.messages); err != nil {
+			fmt.Printf("%scompaction error: %v (continuing without)\n", a.LogPrefix, err)
+		} else {
+			if a.Verbose && len(compacted) != len(a.messages) {
+				ui.PrintCompaction(a.messages, compacted)
+			}
+			a.messages = compacted
+		}
+
+		sp := ui.StartSpinner(label)
+		resp, err := a.Provider.Send(ctx, a.messages, a.Tools.Definitions())
+		sp.Stop()
+		if err != nil {
+			return finalText.String(), err
+		}
+
+		a.messages = append(a.messages, api.Message{Role: api.RoleAssistant, Content: resp.Content})
+
+		var toolResults []api.Block
+		var hasToolCall bool
+
+		for _, b := range resp.Content {
+			switch b.Type {
+			case api.BlockText:
+				if b.Text == "" {
+					continue
+				}
+				if !a.Quiet {
+					fmt.Println(b.Text)
+				}
+				finalText.WriteString(b.Text)
+				finalText.WriteString("\n")
+			case api.BlockToolUse:
+				hasToolCall = true
+				result, isErr := a.executeTool(ctx, b.ToolName, b.ToolInput)
+				toolResults = append(toolResults, api.Block{
+					Type:       api.BlockToolResult,
+					ToolUseID:  b.ToolUseID,
+					ToolResult: result,
+					IsError:    isErr,
+				})
+			}
+		}
+
+		if resp.StopReason != api.StopToolUse || !hasToolCall {
+			return strings.TrimSpace(finalText.String()), nil
+		}
+
+		a.messages = append(a.messages, api.Message{Role: api.RoleUser, Content: toolResults})
+	}
+	return strings.TrimSpace(finalText.String()), fmt.Errorf("max turns (%d) reached", a.MaxTurns)
+}
+
+// executeTool prints the tool-call line, optionally asks for confirmation,
+// and dispatches to the registry.
+func (a *Agent) executeTool(ctx context.Context, name, rawInput string) (string, bool) {
+	fmt.Printf("%s[tool] %s %s\n", a.LogPrefix, name, rawInput)
+	if a.Confirm != nil && !a.Confirm("approve?") {
+		return "user denied this tool call", true
+	}
+	return a.Tools.Execute(ctx, name, rawInput)
+}

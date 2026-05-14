@@ -1,6 +1,7 @@
 package tool
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -26,14 +27,14 @@ func (BashTool) Definition() api.ToolDef {
 	}
 }
 
-func (BashTool) Execute(rawInput string) (string, bool) {
+func (BashTool) Execute(ctx context.Context, rawInput string) (string, bool) {
 	var in struct {
 		Command string `json:"command"`
 	}
 	if err := json.Unmarshal([]byte(rawInput), &in); err != nil {
 		return fmt.Sprintf("invalid tool input: %v", err), true
 	}
-	cmd := exec.Command("sh", "-c", in.Command)
+	cmd := exec.CommandContext(ctx, "sh", "-c", in.Command)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Sprintf("%s\n[exit error: %v]", out, err), true

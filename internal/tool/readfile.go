@@ -1,6 +1,7 @@
 package tool
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -26,7 +27,7 @@ func (ReadFileTool) Definition() api.ToolDef {
 	}
 }
 
-func (ReadFileTool) Execute(rawInput string) (string, bool) {
+func (ReadFileTool) Execute(_ context.Context, rawInput string) (string, bool) {
 	var in struct {
 		Path string `json:"path"`
 	}

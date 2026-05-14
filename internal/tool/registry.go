@@ -4,6 +4,7 @@
 package tool
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -12,7 +13,7 @@ import (
 
 type Tool interface {
 	Definition() api.ToolDef
-	Execute(input string) (result string, isError bool)
+	Execute(ctx context.Context, input string) (result string, isError bool)
 }
 
 type Registry struct {
@@ -25,6 +26,26 @@ func NewRegistry() *Registry {
 
 func (r *Registry) Register(t Tool) {
 	r.tools[t.Definition().Name] = t
+}
+
+// Get returns a previously-registered tool, used by Subset to compose
+// curated tool registries for subagents.
+func (r *Registry) Get(name string) (Tool, bool) {
+	t, ok := r.tools[name]
+	return t, ok
+}
+
+// Subset returns a new Registry containing only the named tools from r.
+// Used to build curated tool sets for subagents (e.g. give a research
+// subagent only read_file and web_search).
+func (r *Registry) Subset(names ...string) *Registry {
+	out := NewRegistry()
+	for _, n := range names {
+		if t, ok := r.tools[n]; ok {
+			out.Register(t)
+		}
+	}
+	return out
 }
 
 // Definitions returns all registered tool schemas, sorted by name so the
@@ -44,12 +65,12 @@ func (r *Registry) Definitions() []api.ToolDef {
 
 // Execute dispatches a tool call by name. Unknown tools return an error
 // result rather than panicking — the model can read it and recover.
-func (r *Registry) Execute(name, input string) (string, bool) {
+func (r *Registry) Execute(ctx context.Context, name, input string) (string, bool) {
 	t, ok := r.tools[name]
 	if !ok {
 		return fmt.Sprintf("unknown tool: %s", name), true
 	}
-	return t.Execute(input)
+	return t.Execute(ctx, input)
 }
 
 // Default is the package-level registry. Tools in this package self-register
