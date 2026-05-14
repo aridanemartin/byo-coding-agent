@@ -10,7 +10,7 @@ This is the chapter where the harness starts to look like Claude Code or OpenCod
 
 Before: REPL loop → input → agent runs synchronously, prints to stdout → next input.
 
-After: Bubble Tea program → input box → user submits → agent runs **in a goroutine**, posts events to the program → program updates the viewport → done event → next input.
+After: Bubble Tea program → input box → you submit → agent runs **in a goroutine**, posts events to the program → program updates the viewport → done event → next input.
 
 The whole thing is a state machine inside the model:
 
@@ -27,9 +27,9 @@ Transitions:
 
 | From | Event | To |
 |---|---|---|
-| `stateIdle` | user submits a line | `stateRunning` |
+| `stateIdle` | you submit a line | `stateRunning` |
 | `stateRunning` | agent calls `Confirm` | `stateAwaitingApproval` |
-| `stateAwaitingApproval` | user picks y/n | `stateRunning` |
+| `stateAwaitingApproval` | you pick y/n | `stateRunning` |
 | `stateRunning` | agent returns | `stateIdle` |
 
 ## The trick that made it tractable
@@ -104,7 +104,7 @@ func (m harness) View() string {
 
 ## The approval flow
 
-This is the most interesting state transition. When the agent calls `Confirm("approve?")`, we need to block until the user picks. But we can't *actually* block in Bubble Tea's Update — that would freeze the entire UI.
+This is the most interesting state transition. When the agent calls `Confirm("approve?")`, we need to block until you pick. But we can't *actually* block in Bubble Tea's Update — that would freeze the entire UI.
 
 The solution: a channel.
 
@@ -117,7 +117,7 @@ rootAgent.Confirm = func(prompt string) bool {
 }
 ```
 
-The agent's goroutine sends an `ApprovalRequest` to the program and blocks on the reply channel. The program's Update handles `ApprovalRequest` by flipping state to `stateAwaitingApproval` and stashing the channel. When the user presses y or n, the program writes to the channel — unblocking the agent's goroutine — and flips state back to `stateRunning`.
+The agent's goroutine sends an `ApprovalRequest` to the program and blocks on the reply channel. The program's Update handles `ApprovalRequest` by flipping state to `stateAwaitingApproval` and stashing the channel. When you press y or n, the program writes to the channel — unblocking the agent's goroutine — and flips state back to `stateRunning`.
 
 ```go
 case ApprovalRequest:
@@ -180,9 +180,9 @@ Concretely:
 
 **Don't try to print from inside Update.** The model's Update runs on Bubble Tea's main loop. If you call `fmt.Println` from there, you're writing to the redirected pipe, which sends an `AppendMsg` back to Update. Recursive, eventually blocks. Use `tea.Cmd` for any side effects.
 
-**The viewport's `AtBottom()` tracking.** We use `m.followBottom = m.viewport.AtBottom()` after forwarding events to the viewport. This is what makes "auto-scroll but stop following when the user scrolled up" work. Easy to forget; results in either always-jumping-to-bottom or never-following.
+**The viewport's `AtBottom()` tracking.** We use `m.followBottom = m.viewport.AtBottom()` after forwarding events to the viewport. This is what makes "auto-scroll but stop following when you scrolled up" work. Easy to forget; results in either always-jumping-to-bottom or never-following.
 
-**Sample subagents that never finish.** Because the agent goroutine can block on a confirm channel, you need a way out if the user is stuck. We don't have one — Ctrl-D quits the whole program. Production would also handle Ctrl-C as "abort current operation" by sending a cancel signal through context.
+**Sample subagents that never finish.** Because the agent goroutine can block on a confirm channel, you need a way out if you're stuck. We don't have one — Ctrl-D quits the whole program. Production would also handle Ctrl-C as "abort current operation" by sending a cancel signal through context.
 
 > **In the current repo.** The pieces from this chapter:
 >

@@ -26,12 +26,12 @@ What gets appended, in order:
 
 | Step | What gets added | Why |
 |---|---|---|
-| User submits a line | `{Role: User, Content: [{Type: Text, Text: ...}]}` | The user's message |
+| You submit a line | `{Role: User, Content: [{Type: Text, Text: ...}]}` | Your message |
 | Model responds | `{Role: Assistant, Content: resp.Content}` | The model's full response, including any `tool_use` blocks |
 | Tools execute | `{Role: User, Content: [{Type: ToolResult, ToolUseID: ..., ToolResult: ...}]}` | One user-role message containing all tool results from this turn |
 | Loop calls Send again | nothing new — Send re-reads the slice | The "loop" in agentLoop is over `messages`, not over fresh input |
 
-After one user turn that uses one tool, the slice has four entries: user text → assistant with tool_use → user with tool_result → assistant with final text. The next user turn appends entry five.
+After a single turn that uses one tool, the slice has four entries (user-role text → assistant with tool_use → user-role tool_result → assistant with final text). The next message you send appends entry five.
 
 ## The wiring between tool_use and tool_result
 

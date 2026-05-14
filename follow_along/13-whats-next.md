@@ -64,9 +64,9 @@ A few features that distinguish a polished product from this harness:
 
 - **Persistent context across sessions.** Each project gets a `.claude` directory; messages and learnings persist.
 - **Skill packs.** Files in a known location that the agent can load context from on demand. (`SKILL.md` files; loaded only when relevant to the task.)
-- **Slash commands that the user can define.** A `.claude/commands/` directory; each file is a prompt template; `/<filename>` invokes it.
-- **Hooks.** Pre-tool and post-tool callbacks the user configures; lets them lint, audit, or block tool calls without modifying the harness code.
-- **Inline diffs.** When the agent edits a file, show a diff in the UI; let the user approve/reject changes hunk-by-hunk.
+- **Slash commands you can define.** A `.claude/commands/` directory; each file is a prompt template; `/<filename>` invokes it.
+- **Hooks.** Pre-tool and post-tool callbacks you configure; lets you lint, audit, or block tool calls without modifying the harness code.
+- **Inline diffs.** When the agent edits a file, show a diff in the UI; let you approve/reject changes hunk-by-hunk.
 - **Sandboxing.** `bash` runs in a container or restricted shell, not on the host directly. (For agents that operate on shared infrastructure.)
 - **Cost tracking.** The agent's token usage and dollar cost are always visible.
 

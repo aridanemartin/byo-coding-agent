@@ -8,7 +8,7 @@ There are roughly three places you can put approval logic:
 
 | Where | What it looks like | Tradeoff |
 |---|---|---|
-| **Inside the tool** | `bash` itself asks "are you sure?" | Tools know the user; couples concerns. Doesn't compose. |
+| **Inside the tool** | `bash` itself asks "are you sure?" | Each tool has to know there's a person to prompt; couples concerns. Doesn't compose. |
 | **At the harness layer** | The agent loop asks before calling the tool | One place, consistent UX, doesn't need tool cooperation. ✓ |
 | **At the model layer** | Tell the model "always ask first" | Unreliable. The model is supposed to help, not gatekeep. |
 
@@ -44,7 +44,7 @@ Two things hidden in those five lines:
 
 ## Why "user denied" is a tool result, not a hard stop
 
-When the user says no, we don't crash, don't abort the conversation, don't bypass the model. We return:
+When you say no, we don't crash, don't abort the conversation, don't bypass the model. We return:
 
 ```go
 return "user denied this tool call", true
@@ -53,16 +53,16 @@ return "user denied this tool call", true
 The `true` is `is_error`. The model gets back a tool result saying the call was denied. Typical model behavior on denial:
 
 - Try a different approach (different tool, different arguments)
-- Ask the user what they'd prefer
+- Ask you what you'd prefer
 - Apologize and stop
 
-This is the same channel as any other tool failure (file not found, bash exit error, etc.). The model doesn't need to know whether it was a user decision or a system error — the contract is just "tool calls can fail; here's the message."
+This is the same channel as any other tool failure (file not found, bash exit error, etc.). The model doesn't need to know whether it was a deliberate denial or a system error — the contract is just "tool calls can fail; here's the message."
 
 This is one of the most important design decisions in the harness. **The model is in a loop; failures are inputs to the next iteration, not exceptions.** Treating denials, errors, and successes uniformly is what lets the model adapt.
 
 ## What gets gated
 
-In this implementation: **every tool call**. Every time the model wants to invoke `bash`, `read_file`, or `write_file`, the user gets prompted.
+In this implementation: **every tool call**. Every time the model wants to invoke `bash`, `read_file`, or `write_file`, you get prompted.
 
 This is over-cautious for `read_file` and `write_file` — they're scoped to specific paths, easier to reason about than a shell command. A more nuanced design would use a `PermissionPolicy` interface with named policies:
 
@@ -87,7 +87,7 @@ A `policy.Decide(name, input) → allow | deny | ask` would replace the inline `
 
 **Forgetting to mark the error.** Returning `"user denied"` with `isError: false` makes the model think the tool succeeded with an unhelpful output. It'll act on that confusion. Always set `isError: true` for denials.
 
-**The hidden assumption: the user is at the keyboard.** In a non-interactive context (CI, scripted tests) the prompt would hang waiting for input. We don't handle that here. A real production version would auto-deny when stdin isn't a TTY.
+**The hidden assumption: you're at the keyboard.** In a non-interactive context (CI, scripted tests) the prompt would hang waiting for input. We don't handle that here. A real production version would auto-deny when stdin isn't a TTY.
 
 > **In the current repo.** `executeTool` in [`main.go`](../main.go) is the wrapper:
 >

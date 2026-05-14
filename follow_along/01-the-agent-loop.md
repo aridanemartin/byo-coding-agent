@@ -3,7 +3,7 @@
 The whole thing fits in one diagram:
 
 ```
-[user input]
+[your input]
     │
     ▼
 [append to messages]
@@ -42,11 +42,11 @@ loop forever:
     sleep until next frame
 ```
 
-A REPL is the same skeleton, just slowed down and event-driven. Instead of running 60 times per second on a timer, it runs once per *user input* — keyed off the human typing, not the clock:
+A REPL is the same skeleton, just slowed down and event-driven. Instead of running 60 times per second on a timer, it runs once per input from you — keyed off your typing, not the clock:
 
 ```
 loop forever:
-    read input     (the user's line)
+    read input     (your line)
     eval           (do something with it)
     print          (show the result)
     wait for next line
@@ -54,14 +54,14 @@ loop forever:
 
 You've used REPLs in this shape before, probably without naming them: Python's `python3` prompt, a browser's JavaScript console, `bash` itself. Same loop, same purpose, different "eval" step.
 
-Our harness's outer loop is a REPL. The twist: "eval" means "run the agent loop on the user's message," not "run a piece of code." So the harness has two nested loops:
+Our harness's outer loop is a REPL. The twist: "eval" means "run the agent loop on your message," not "run a piece of code." So the harness has two nested loops:
 
 | Loop | Driven by | One iteration is |
 |---|---|---|
-| Outer (REPL) | The user's keystrokes | Read a line → run the agent on it → print → wait for next line |
+| Outer (REPL) | Your keystrokes | Read a line → run the agent on it → print → wait for next line |
 | Inner (agent loop) | The model's choices | Send to model → if tool_use, execute and append → repeat until done |
 
-Same skeleton as a game loop. The outer loop is a *game tick on user input*; the inner loop is the *update step* (with model+tools standing in for physics+AI). When you read about "the loop" in later chapters, context tells you which one — mostly it's the agent loop, since that's where the interesting state lives.
+Same skeleton as a game loop. The outer loop is a *game tick on your input*; the inner loop is the *update step* (with model+tools standing in for physics+AI). When you read about "the loop" in later chapters, context tells you which one — mostly it's the agent loop, since that's where the interesting state lives.
 
 ## What happens in one turn
 
@@ -71,14 +71,14 @@ The diagram at the top of this chapter shows the full picture, but it's easier t
 
 Imagine the model has no tools. The inner loop collapses to:
 
-1. User types a message.
+1. You type a message.
 2. We append it to a running list of messages.
 3. Send the whole list to the model.
 4. Model returns a text response.
 5. Print it.
-6. Wait for the next user input.
+6. Wait for your next input.
 
-That's a working program. It chats. The user could ask "what's the capital of France?" and get "Paris." But it can't *do* anything — it has no hands. To the user, it feels like a wrapper around the API.
+That's a working program. It chats. You could ask "what's the capital of France?" and get "Paris." But it can't *do* anything — it has no hands. From your perspective, it feels like a wrapper around the API.
 
 ### Pass 2: tools turn the chat into an agent
 
@@ -88,7 +88,7 @@ Now the model has two kinds of response it can return:
 
 | Response shape | What it means | What we do |
 |---|---|---|
-| Plain text | "Here's my answer." | Print it, wait for the next user message |
+| Plain text | "Here's my answer." | Print it, wait for your next message |
 | A **tool call request** | "Before I answer, please run `read_file` with `path: main.go` and tell me what's in it." | Run the tool, send the result back, call the model again |
 
 The second branch is where the **loop** comes in. When the model asks for a tool, the harness:
@@ -128,13 +128,13 @@ The second branch is where the **loop** comes in. When the model asks for a tool
 >
 > A struct implementing two methods. `Definition` returns the schema the model sees. `Execute` does the work and returns `(result string, isError bool)`. Chapter 09 covers why tools end up in this shape; the rest of this chapter shows a simpler precursor where all three tools are dispatched by a switch statement.
 
-That last step is recursive in spirit but iterative in code. A single user message might trigger one model call ("Paris.") or twenty (read three files, run two bash commands, then finally synthesize an answer). The model picks; the harness obeys. We keep looping as long as the model keeps asking for tools, and we stop the moment it returns plain text.
+That last step is recursive in spirit but iterative in code. A single message from you might trigger one model call ("Paris.") or twenty (read three files, run two bash commands, then finally synthesize an answer). The model picks; the harness obeys. We keep looping as long as the model keeps asking for tools, and we stop the moment it returns plain text.
 
 ### Putting it together
 
 So the inner loop has exactly two exits:
 
-- The model returns text → print it, return to the REPL, wait for the next user message.
+- The model returns text → print it, return to the REPL, wait for your next message.
 - The model returns a tool call → run the tool, append the result, ask again.
 
 That's the entire conceptual picture. Everything that follows in this chapter is wire-level detail: what the request and response actually look like, which tools we expose, and how to structure the Go code.

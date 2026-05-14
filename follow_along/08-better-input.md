@@ -38,7 +38,7 @@ This is the right answer for most CLIs. We use it briefly and then replace it. W
 
 ## Step 2: Bubble Tea
 
-The user wanted the input to look like Claude Code or OpenCode — bordered, styled, multi-line ready, with a status indication. `readline` styling stops at "you can put ANSI codes in the prompt." It can't draw a box.
+We wanted the input to look like Claude Code or OpenCode — bordered, styled, multi-line ready, with a status indication. `readline` styling stops at "you can put ANSI codes in the prompt." It can't draw a box.
 
 `github.com/charmbracelet/bubbletea` is the Go TUI framework that those tools use. It's overkill for "read a line." But it's the right starting point for *eventually* having a full TUI (chapter 12), and it lets us draw whatever input affordances we want.
 
@@ -90,7 +90,7 @@ The result is a single bordered input box that gets called once per turn:
   enter: send · ↑↓: history · ctrl-d: exit
 ```
 
-After the user submits, Bubble Tea exits, the box stays on screen (because we don't use alt-screen mode at this stage), and the next iteration of the REPL kicks off another `ReadChatInput`.
+After you submit, Bubble Tea exits, the box stays on screen (because we don't use alt-screen mode at this stage), and the next iteration of the REPL kicks off another `ReadChatInput`.
 
 ## Why two steps for the same goal
 
@@ -120,7 +120,7 @@ In Bubble Tea mode, same idea — confirm runs another `tea.NewProgram`. By chap
 
 ## Pitfalls
 
-**Persisting history.** When you add `HistoryFile`, you're writing user-typed text to disk. If users paste API keys into chat (this happens), you've leaked them to `~/.bettatech_harness_history`. We accept this for a learning project. For production: don't persist history, or hash/redact specific patterns first.
+**Persisting history.** When you add `HistoryFile`, you're writing your typed text to disk. If you ever paste an API key into chat (it happens), you've leaked it to `~/.bettatech_harness_history`. We accept this for a learning project. For production: don't persist history, or hash/redact specific patterns first.
 
 **TUI in non-TTY environments.** `tea.NewProgram` fails if stdin isn't a terminal. We don't handle this gracefully — running `harness < script.txt` would crash. A real-world version would detect non-TTY and fall back to scanner-mode automatically.
 
@@ -131,7 +131,7 @@ In Bubble Tea mode, same idea — confirm runs another `tea.NewProgram`. By chap
 ## Now try
 
 1. Compare the feel of the harness with the `bufio.Scanner` version (use git to check out an earlier state if you have history) vs the readline version vs the Bubble Tea version. Notice how much "polish" is just affordance count.
-2. Read `internal/ui/input.go` and trace the up-arrow code path. The `bufferText` field stores what the user was typing *before* they started navigating history, so pressing Down past the most-recent entry restores it. Surprisingly easy to miss.
+2. Read `internal/ui/input.go` and trace the up-arrow code path. The `bufferText` field stores what you were typing *before* you started navigating history, so pressing Down past the most-recent entry restores it. Surprisingly easy to miss.
 3. Replace `textinput` with `textarea` (also from `bubbles`) and figure out the multi-line keybindings. Specifically: how do you bind Shift-Enter to "insert newline" while plain Enter "submits"? (This is a real-world rabbit hole — some terminals can't distinguish the two.)
 
 Next: [09 · Plug-and-play tools](09-plug-and-play-tools.md).

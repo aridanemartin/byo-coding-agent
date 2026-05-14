@@ -38,7 +38,7 @@ func (a *Agent) ClearMessages()            { a.messages = a.messages[:0] }
 func (a *Agent) SetMessages(m []api.Message) { a.messages = m }
 ```
 
-`Send` appends the user message and runs the loop. The loop logic is what `agentLoop` used to be — moved verbatim, with `provider` → `a.Provider`, `messages` → `a.messages`, etc.
+`Send` appends the prompt you pass in as a user-role message and then runs the loop. The loop logic is what `agentLoop` used to be — moved verbatim, with `provider` → `a.Provider`, `messages` → `a.messages`, etc.
 
 The `LogPrefix` and `Quiet` fields are how we distinguish root from subagent visually:
 
@@ -46,10 +46,10 @@ The `LogPrefix` and `Quiet` fields are how we distinguish root from subagent vis
 |---|---|---|
 | `LogPrefix` | `""` | `"  ↳ "` |
 | `Quiet` | `false` | `true` |
-| `Confirm` | `ui.Confirm` (asks user) | `nil` (auto-approve) |
+| `Confirm` | `ui.Confirm` (asks you) | `nil` (auto-approve) |
 | `Name` | `""` | `"research"` |
 
-So tool calls indent (`  ↳ [tool] read_file ...`), assistant text is silent (the subagent's working commentary doesn't echo to the user; we just return the final answer), and approval is implicit — the user approving the parent delegate call is implicit approval for everything inside.
+So tool calls indent (`  ↳ [tool] read_file ...`), assistant text is silent (the subagent's working commentary doesn't echo back; we just return the final answer), and approval is implicit — you approving the parent delegate call counts as approval for everything inside.
 
 ## Refactor 2: the `Subagent` abstraction
 
@@ -197,7 +197,7 @@ This is harness engineering in its most direct form: the model's apparent person
 
 ## The visible result
 
-When the user asks "where is the agent loop defined?" — and the prompt is right — the conversation looks like:
+When you ask "where is the agent loop defined?" — and the prompt is right — the conversation looks like:
 
 ```
 [tool] delegate_research {"task":"locate the agent loop"}
@@ -231,6 +231,6 @@ Three visible cues: the header, the indented tool calls, the footer with elapsed
 
 1. Add a second subagent: `CodeReview`. Tools: `read_file`, `bash` (so it can run linters). System prompt: "You are a code reviewer. …". Register it. Confirm `delegate_codereview` appears in `/tools`.
 2. Have a long conversation. Right after a delegate call, type `/subagents`. (You won't catch one in flight unless you're fast — but the registered subagents always show.)
-3. Modify `Research.Run` so subagents respect a Confirm function passed from the parent. That's the path to *recursive* approval — every subagent tool call also asks the user. Heavier UX, more visibility.
+3. Modify `Research.Run` so subagents respect a Confirm function passed from the parent. That's the path to *recursive* approval — every subagent tool call also asks you. Heavier UX, more visibility.
 
 Next: [12 · The full TUI](12-full-tui.md).

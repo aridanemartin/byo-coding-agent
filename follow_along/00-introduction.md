@@ -12,7 +12,7 @@ There's nothing exotic in here. It's a model, a loop that calls it, some tools t
 
 ## What "harness engineering" is
 
-The model is the engine. The **harness** is everything else: the loop that calls the model, the tools it can use, how the conversation is shaped over time, what it's allowed to do, how the user talks to it.
+The model is the engine. The **harness** is everything else: the loop that calls the model, the tools it can use, how the conversation is shaped over time, what it's allowed to do, how you talk to it.
 
 The discipline matters because the same model behind two different harnesses behaves like two different products. Claude Code, OpenCode, Aider, and Cursor all use roughly the same family of models. Their personalities — fast or careful, transparent or opaque, capable or cautious — live in their harnesses. Get the harness right and a mid-tier model feels great; get it wrong and a frontier model feels broken.
 

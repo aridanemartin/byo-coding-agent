@@ -47,7 +47,7 @@ Three small things hidden in that pattern, worth knowing because they show up ev
 
 ## The spinner
 
-While the agent is waiting on the API, the user sees nothing for several seconds. That's bad UX. We add a small braille spinner that overwrites itself in place:
+While the agent is waiting on the API, you see nothing for several seconds. That's bad UX. We add a small braille spinner that overwrites itself in place:
 
 ```go
 var spinnerFrames = []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
