@@ -205,9 +205,14 @@ In rough order of difficulty:
 
 Each one is a worthwhile next chapter.
 
-## The journey — read it as a book
+## Documentation
 
-[`follow_along/`](follow_along/README.md) contains 14 chapter-length markdown files telling the *why* of every layer in the harness, in the order it was built. Start at [`follow_along/00-introduction.md`](follow_along/00-introduction.md) and read in order — about an hour total.
+Two flavors of docs, for the two reasons people read this repo:
+
+- [`follow_along/`](follow_along/en/README.md) — chapter-length narrative on the *why* of every layer in the harness, in the order it was built. Read in order; about an hour total. Available in [English](follow_along/en/README.md) and [Spanish](follow_along/es/README.md).
+- [`how-to/`](how-to/en/README.md) — short recipe-style references for the extension tasks people actually do: [add a tool](how-to/en/add-a-tool.md), [add a provider](how-to/en/add-a-provider.md), [add a permission policy](how-to/en/add-a-permission-policy.md). Also bilingual.
+
+If you're learning, start with `follow_along/`. If you've already built it and want to extend it, jump to `how-to/`.
 
 ## Acknowledgments
 

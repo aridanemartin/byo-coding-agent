@@ -205,9 +205,14 @@ En orden aproximado de dificultad:
 
 Cada uno es un capítulo siguiente válido.
 
-## El viaje — léelo como un libro
+## Documentación
 
-[`follow_along/`](follow_along/README.md) contiene 14 archivos markdown del tamaño de capítulos que cuentan el *por qué* de cada capa del harness, en el orden en que se construyó (en inglés). Empieza por [`follow_along/00-introduction.md`](follow_along/00-introduction.md) y lee en orden — alrededor de una hora en total.
+Dos sabores de documentación, para las dos razones por las que alguien lee este repositorio:
+
+- [`follow_along/`](follow_along/es/README.md) — narrativa del tamaño de capítulos sobre el *por qué* de cada capa del harness, en el orden en que se construyó. Léela en orden; alrededor de una hora en total. Disponible en [inglés](follow_along/en/README.md) y [español](follow_along/es/README.md).
+- [`how-to/`](how-to/es/README.md) — referencias breves en formato receta para las tareas de extensión más comunes: [añadir una herramienta](how-to/es/add-a-tool.md), [añadir un proveedor](how-to/es/add-a-provider.md), [añadir una política de permisos](how-to/es/add-a-permission-policy.md). También bilingüe.
+
+Si estás aprendiendo, empieza por `follow_along/`. Si ya lo construiste y quieres extenderlo, salta a `how-to/`.
 
 ## Reconocimientos
 
