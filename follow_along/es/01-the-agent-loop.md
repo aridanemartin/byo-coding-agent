@@ -1,6 +1,6 @@
 # 01 · El bucle del agente
 
-Todo el asunto cabe en un diagrama:
+Antes de empezar, déjame mostrate el bucle general de cualquier aplicación que use agentes de IA a modo de arnés:
 
 ```
 [tu entrada]
@@ -26,11 +26,11 @@ Todo el asunto cabe en un diagrama:
 (volver a "llamar al modelo")
 ```
 
-Eso es todo. El modelo decide qué hacer; el harness ejecuta; el bucle continúa hasta que el modelo deja de pedir herramientas. Todo lo demás en este libro — proveedores, compactación, subagentes, la TUI — es una capa encima de este bucle.
+Eso es todo. El modelo decide qué hacer; el arnés ejecuta; el bucle continúa hasta que el modelo deja de pedir herramientas. Todo lo demás en este repositorio — proveedores, compactación, subagentes, la TUI — es una capa encima de este bucle.
 
 ## Un paréntesis: ¿qué es un REPL?
 
-El diagrama de arriba es el bucle **interno** — un turno completo del agente. También hay un bucle **externo** que envuelve todo esto, llamado **REPL**: **R**ead–**E**val–**P**rint–**L**oop.
+El diagrama de arriba es el bucle **interno**, un turno completo del agente. También hay un bucle **externo** que envuelve todo esto, llamado **REPL**: **R**ead–**E**val–**P**rint–**L**oop.
 
 Si has escrito o jugado videojuegos, ya viste esta forma. Un **game loop** corre a 60 cuadros por segundo y hace las mismas cuatro cosas cada cuadro:
 
