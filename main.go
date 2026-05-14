@@ -42,7 +42,11 @@ Be concise.`
 var rootAgent *agent.Agent
 
 func main() {
-	llm := provider.NewAnthropicProvider(anthropic.ModelClaudeOpus4_7, 8192, systemPrompt)
+	// AGENTS.md, if present in the working directory, is appended to the
+	// system prompt as project-specific context. Opt-in, missing file is
+	// silent — same shape as the MCP config.
+	sysPrompt := systemPrompt + loadAgentsContext()
+	llm := provider.NewAnthropicProvider(anthropic.ModelClaudeOpus4_7, 8192, sysPrompt)
 
 	// MCP servers are opt-in via mcp.json. If the file is absent, no servers
 	// are launched; if it's present, each entry registers its tools into
@@ -58,7 +62,7 @@ func main() {
 
 	registerSubagents(llm)
 
-	rootAgent = agent.New(llm, systemPrompt, tool.Default)
+	rootAgent = agent.New(llm, sysPrompt, tool.Default)
 	rootAgent.Compactor = compact.NoCompaction{}
 	rootAgent.MaxTurns = 50
 
@@ -112,6 +116,19 @@ func main() {
 		return
 	}
 	os.Stdout = originalStdout
+}
+
+// loadAgentsContext reads ./AGENTS.md and returns it wrapped in a header for
+// inclusion in the system prompt. The file is the AGENTS.md convention
+// popularized by Claude Code's CLAUDE.md — a place to leave project-specific
+// guidance the agent should always have in context. Missing file is silent;
+// AGENTS.md is opt-in.
+func loadAgentsContext() string {
+	data, err := os.ReadFile("AGENTS.md")
+	if err != nil {
+		return ""
+	}
+	return "\n\n# Project context (from AGENTS.md)\n\n" + string(data)
 }
 
 // setupMCP loads mcp.json (if present) and connects each configured server.

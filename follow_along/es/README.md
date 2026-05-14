@@ -30,6 +30,7 @@ Capítulos independientes que extienden el harness con integraciones concretas. 
 | # | Título | De qué trata |
 |---|---|---|
 | [14](14-mcp-support.md) | Agregando soporte de MCP | Envolver servidores remotos del Model Context Protocol detrás de la interfaz `Tool` |
+| [15](15-agents-md.md) | Contexto del proyecto con AGENTS.md | Cargar un archivo markdown específico del proyecto en el system prompt al arranque |
 
 ## Cómo leer esto
 
