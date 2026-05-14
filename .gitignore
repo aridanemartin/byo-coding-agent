@@ -1,0 +1,13 @@
+# Compiled binary
+harness
+
+# Runtime artifacts (compaction logs, etc.)
+*.log
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
