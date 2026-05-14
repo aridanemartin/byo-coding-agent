@@ -28,6 +28,87 @@ The whole thing fits in one diagram:
 
 That's it. The model decides what to do; the harness executes; the loop continues until the model stops asking for tools. Everything else in this book — providers, compaction, subagents, the TUI — is a layer on top of this loop.
 
+## Aside: what's a REPL?
+
+The diagram above is the **inner** loop — one full agent turn. There's also an **outer** loop wrapping the whole thing, called a **REPL**: **R**ead–**E**val–**P**rint–**L**oop.
+
+If you've written or played video games, you've already seen this shape. A **game loop** runs at 60 frames per second and does the same four things every frame:
+
+```
+loop forever:
+    read inputs    (key presses, mouse, controller)
+    update state   (physics, AI, what changed since last frame)
+    render         (draw the new frame to the screen)
+    sleep until next frame
+```
+
+A REPL is the same skeleton, just slowed down and event-driven. Instead of running 60 times per second on a timer, it runs once per *user input* — keyed off the human typing, not the clock:
+
+```
+loop forever:
+    read input     (the user's line)
+    eval           (do something with it)
+    print          (show the result)
+    wait for next line
+```
+
+You've used REPLs in this shape before, probably without naming them: Python's `python3` prompt, a browser's JavaScript console, `bash` itself. Same loop, same purpose, different "eval" step.
+
+Our harness's outer loop is a REPL. The twist: "eval" means "run the agent loop on the user's message," not "run a piece of code." So the harness has two nested loops:
+
+| Loop | Driven by | One iteration is |
+|---|---|---|
+| Outer (REPL) | The user's keystrokes | Read a line → run the agent on it → print → wait for next line |
+| Inner (agent loop) | The model's choices | Send to model → if tool_use, execute and append → repeat until done |
+
+Same skeleton as a game loop. The outer loop is a *game tick on user input*; the inner loop is the *update step* (with model+tools standing in for physics+AI). When you read about "the loop" in later chapters, context tells you which one — mostly it's the agent loop, since that's where the interesting state lives.
+
+## What happens in one turn
+
+The diagram at the top of this chapter shows the full picture, but it's easier to digest in two passes — first without tools, then with.
+
+### Pass 1: without tools, it's just a chat client
+
+Imagine the model has no tools. The inner loop collapses to:
+
+1. User types a message.
+2. We append it to a running list of messages.
+3. Send the whole list to the model.
+4. Model returns a text response.
+5. Print it.
+6. Wait for the next user input.
+
+That's a working program. It chats. The user could ask "what's the capital of France?" and get "Paris." But it can't *do* anything — it has no hands. To the user, it feels like a wrapper around the API.
+
+### Pass 2: tools turn the chat into an agent
+
+To give the model hands, we add **tools** — named operations the harness knows how to perform, like `bash`, `read_file`, `write_file`. Each tool has a JSON schema describing its inputs. The schemas get sent alongside every model request so the model knows what's available.
+
+Now the model has two kinds of response it can return:
+
+| Response shape | What it means | What we do |
+|---|---|---|
+| Plain text | "Here's my answer." | Print it, wait for the next user message |
+| A **tool call request** | "Before I answer, please run `read_file` with `path: main.go` and tell me what's in it." | Run the tool, send the result back, call the model again |
+
+The second branch is where the **loop** comes in. When the model asks for a tool, the harness:
+
+1. Executes the tool locally (e.g. runs `read_file`, captures the output).
+2. Appends a **tool result** to the messages slice.
+3. Sends the now-longer conversation back to the model.
+4. Model sees the result and decides what to do next — answer, or call another tool.
+
+That last step is recursive in spirit but iterative in code. A single user message might trigger one model call ("Paris.") or twenty (read three files, run two bash commands, then finally synthesize an answer). The model picks; the harness obeys. We keep looping as long as the model keeps asking for tools, and we stop the moment it returns plain text.
+
+### Putting it together
+
+So the inner loop has exactly two exits:
+
+- The model returns text → print it, return to the REPL, wait for the next user message.
+- The model returns a tool call → run the tool, append the result, ask again.
+
+That's the entire conceptual picture. Everything that follows in this chapter is wire-level detail: what the request and response actually look like, which tools we expose, and how to structure the Go code.
+
 ## The contract with the model
 
 A single call to the Anthropic Messages API has this shape:
