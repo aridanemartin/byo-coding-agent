@@ -20,6 +20,7 @@ import (
 	"github.com/betta-tech/byo-coding-agent/internal/compact"
 	"github.com/betta-tech/byo-coding-agent/internal/debug"
 	"github.com/betta-tech/byo-coding-agent/internal/mcp"
+	"github.com/betta-tech/byo-coding-agent/internal/memory"
 	"github.com/betta-tech/byo-coding-agent/internal/provider"
 	"github.com/betta-tech/byo-coding-agent/internal/subagent"
 	"github.com/betta-tech/byo-coding-agent/internal/tool"
@@ -53,6 +54,8 @@ For READ-ONLY INVESTIGATION you SHOULD call delegate_research rather than readin
 
 The subagent has its own context window, so it can do many reads without cluttering yours. Prefer delegating even when you think one or two reads would do it. Only skip the subagent if the question is about a single file the user has already shown you. After delegating, present the subagent's findings directly.
 
+You have persistent memory across sessions (chapter 19). Two tools wire to it: ` + "`remember(content, kind, tags)`" + ` to save something, and ` + "`recall(query)`" + ` to search past sessions. Recent session summaries are already loaded into this system prompt under "Recent sessions" — check there first before recalling. Use ` + "`remember`" + ` sparingly: project conventions, user preferences, important decisions. Not every fact deserves to persist; only the ones the user would want to carry into tomorrow.
+
 Be concise. Be honest when you don't know — guessing is worse than saying "I'd need to read X to answer that." Match the user's language: if they write in Spanish, answer in Spanish.`
 
 // rootAgent is the agent the REPL drives. Subagents have their own Agent
@@ -76,12 +79,58 @@ func notifyDebugUI() {
 	}
 }
 
+// envTruthy reports whether an env var is set to a value humans normally
+// mean as "yes". Kept tiny on purpose: the harness has no central config
+// struct, just env vars read inline near the thing they affect, and this
+// avoids reinventing the parse rules every time.
+func envTruthy(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(name))) {
+	case "1", "true", "yes", "on":
+		return true
+	}
+	return false
+}
+
 func main() {
-	// AGENTS.md, if present in the working directory, is appended to the
-	// system prompt as project-specific context. Opt-in, missing file is
-	// silent — same shape as the MCP config.
+	// AGENTS.md (chapter 15) and the memory preamble (chapter 19) both
+	// extend the system prompt with project context. AGENTS.md is
+	// human-authored; the memory preamble is summaries the agent itself
+	// wrote in previous sessions. They compose: human guidance + agent
+	// experience.
 	activeSysPrompt = systemPrompt + loadAgentsContext()
+
+	mem, memErr := memory.NewSessionFiles(".harness")
+	if memErr != nil {
+		fmt.Fprintf(os.Stderr, "memory: %v (continuing without persistent memory)\n", memErr)
+	} else {
+		memory.Default = mem
+		if pre, err := mem.Preamble(context.Background()); err == nil {
+			activeSysPrompt += pre
+		}
+	}
+
 	llm := newProvider(activeSysPrompt)
+
+	// At shutdown, summarize the session via the model and persist it. The
+	// auto-summary is the piece that makes the *next* session start
+	// knowing something. Best-effort: a failed summary call still flushes
+	// whatever draft entries exist via Close, with "(no summary)" as the
+	// header.
+	defer func() {
+		if mem == nil {
+			return
+		}
+		msgs := rootAgent.Messages()
+		if len(msgs) > 0 {
+			summary, tags := summarizeSession(context.Background(), llm, msgs)
+			_ = mem.Save(context.Background(), memory.Entry{
+				Kind:    memory.KindSessionSummary,
+				Content: summary,
+				Tags:    tags,
+			})
+		}
+		_ = mem.Close()
+	}()
 
 	// MCP servers are opt-in via mcp.json. If the file is absent, no servers
 	// are launched; if it's present, each entry registers its tools into
@@ -146,6 +195,16 @@ func main() {
 	debug.SetSink(func(_ debug.Event) {
 		program.Send(ui.DebugRefreshMsg{})
 	})
+
+	// HARNESS_DEBUG=1 (or true/yes/on) starts the session with the debug
+	// panel already recording, so the very first request to the provider
+	// is captured without having to type /debug on after launch. The
+	// equivalent runtime toggle is `/debug` in commands.go; this is just
+	// the startup-time shortcut. We set the flag *after* SetSink above so
+	// the first recorded event already has a refresh path into the UI.
+	if envTruthy("HARNESS_DEBUG") {
+		debug.SetEnabled(true)
+	}
 
 	// Now that we have a program to send progress events into, kick off
 	// MCP server connection in the background. The TUI shows a loading
@@ -268,6 +327,69 @@ func ProviderKind(p provider.Provider) string {
 	default:
 		return "unknown"
 	}
+}
+
+// summarizeSession asks the active provider for a one-paragraph recap of
+// the conversation plus 3–5 tags, used as the body of the session file
+// saved at shutdown. Bounded transcript length so a long session doesn't
+// itself blow up the summarizer. Failures degrade to a placeholder rather
+// than aborting shutdown.
+func summarizeSession(ctx context.Context, p provider.Provider, history []api.Message) (string, []string) {
+	transcript := api.RenderTranscript(history)
+	const maxTranscript = 50_000
+	if len(transcript) > maxTranscript {
+		transcript = transcript[:maxTranscript] + "\n[...truncated...]"
+	}
+
+	instruction := `You are summarizing a coding-agent session for persistent memory used by future sessions.
+
+Output format, exactly:
+
+<one paragraph summarizing what was worked on, decided, learned, or left open>
+
+TAGS: tag1, tag2, tag3
+
+Use 3–5 single-word lowercase tags. Be concrete about technical topics covered (file names, package names, concepts). Skip pleasantries.
+
+Transcript follows:
+
+`
+
+	resp, err := p.Send(ctx, []api.Message{{
+		Role:    api.RoleUser,
+		Content: []api.Block{{Type: api.BlockText, Text: instruction + transcript}},
+	}}, nil)
+	if err != nil {
+		return fmt.Sprintf("(summarization failed: %v)", err), nil
+	}
+
+	var text strings.Builder
+	for _, b := range resp.Content {
+		if b.Type == api.BlockText {
+			text.WriteString(b.Text)
+		}
+	}
+	return parseSummaryAndTags(text.String())
+}
+
+// parseSummaryAndTags extracts a "<summary>\n\nTAGS: a, b, c" shape from
+// the model's reply. If the TAGS line is missing, returns the full text as
+// the summary and nil tags — never an error, the summarizer is best-effort.
+func parseSummaryAndTags(text string) (string, []string) {
+	idx := strings.LastIndex(text, "TAGS:")
+	if idx < 0 {
+		return strings.TrimSpace(text), nil
+	}
+	summary := strings.TrimSpace(text[:idx])
+	tagLine := strings.TrimSpace(text[idx+len("TAGS:"):])
+	var tags []string
+	for _, t := range strings.Split(tagLine, ",") {
+		t = strings.TrimSpace(strings.ToLower(t))
+		if t != "" {
+			tags = append(tags, t)
+		}
+	}
+	return summary, tags
 }
 
 // loadAgentsContext reads ./AGENTS.md and returns it wrapped in a header for

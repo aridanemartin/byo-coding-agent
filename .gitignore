@@ -1,11 +1,19 @@
 # Compiled binary
 harness
+sitegen
 
 # Runtime artifacts (compaction logs, etc.)
 *.log
 
 # Local MCP server config — may contain auth tokens. Track mcp.example.json instead.
 mcp.json
+
+# Agent memory store (chapter 19). May contain project paths, user names,
+# or other context worth keeping local.
+.harness/
+
+# Generated static site (cmd/sitegen output). CI rebuilds and deploys it.
+site/
 
 # Editor / IDE
 .idea/

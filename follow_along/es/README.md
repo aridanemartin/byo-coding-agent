@@ -34,6 +34,7 @@ Capítulos independientes que extienden el harness con integraciones concretas. 
 | [16](16-token-viewer.md) | El visor de tokens | Rastrear el uso y el coste de la sesión, comando `/tokens` y línea de estado en vivo |
 | [17](17-prompt-caching.md) | Prompt caching | Qué es, qué lo invalida, y el cambio de una línea para activarlo |
 | [18](18-diff-approval.md) | Aprobación con diff para escrituras | Mostrar un diff unificado en un modal antes de que `write_file` toque disco |
+| [19](19-agent-memory.md) | Memoria del agente | Una interfaz `Store` y una implementación con archivos de sesión para que el agente recuerde entre runs |
 
 ## Cómo leer esto
 

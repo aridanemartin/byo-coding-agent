@@ -34,6 +34,7 @@ Standalone chapters that extend the harness with concrete integrations. They bui
 | [16](16-token-viewer.md) | The token viewer | Tracking session usage and cost, `/tokens` command and a live status line |
 | [17](17-prompt-caching.md) | Prompt caching | What it is, what invalidates it, and the one-line change to turn it on |
 | [18](18-diff-approval.md) | Diff approval for writes | Showing a unified diff in a modal before `write_file` touches disk |
+| [19](19-agent-memory.md) | Agent memory | A `Store` interface and a session-files implementation so the agent remembers across runs |
 
 ## How to read this
 
