@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="{{if eq .Lang "es"}}../{{end}}favicon.svg">
 <link rel="stylesheet" href="{{if eq .Lang "es"}}../{{end}}styles.css">
 </head>
 <body data-variant="blueprint">
@@ -24,6 +25,8 @@
         <a href="#why">{{if eq .Lang "es"}}por qué{{else}}why{{end}}</a>
         <a href="#architecture">{{if eq .Lang "es"}}arquitectura{{else}}architecture{{end}}</a>
         <a href="#curriculum">{{if eq .Lang "es"}}lecciones{{else}}lessons{{end}}</a>
+        <a href="#how-to">how-to</a>
+        {{if .Exercises}}<a href="#exercises">{{if eq .Lang "es"}}ejercicios{{else}}exercises{{end}}</a>{{end}}
         <a href="#quickstart">{{if eq .Lang "es"}}quickstart{{else}}quickstart{{end}}</a>
       </nav>
       <div class="right">
@@ -38,7 +41,7 @@
         <span class="sep">/</span>
         <span>MIT licensed</span>
         <span class="sep">/</span>
-        <span>{{.Total}} {{if eq .Lang "es"}}lecciones · 4 capítulos{{else}}lessons · 4 chapters{{end}}</span>
+        <span>{{.Total}} {{if eq .Lang "es"}}lecciones · {{len .Guides}} how-tos{{if .Exercises}} · {{len .Exercises}} ejercicios{{end}}{{else}}lessons · {{len .Guides}} how-tos{{if .Exercises}} · {{len .Exercises}} exercises{{end}}{{end}}</span>
         <span class="sep">/</span>
         <span>github.com/betta-tech/byo-coding-agent</span>
       </div>
@@ -179,9 +182,61 @@
       </div>
     </section>
 
-    <section id="quickstart">
+    <section id="how-to">
       <div class="section-head">
         <span class="num">§03</span>
+        <span class="label">{{if eq .Lang "es"}}Guías how-to{{else}}How-to guides{{end}}</span>
+        <span class="rule"></span>
+      </div>
+      <h2 class="section-title">{{if eq .Lang "es"}}Recetas cortas para extender el harness.{{else}}Short recipes for extending the harness.{{end}}</h2>
+      <p class="section-body" style="margin-bottom: 24px">
+        {{if eq .Lang "es"}}Cuando ya hayas leído las lecciones y quieras añadir tu propia pieza, estas guías te dan el paso a paso — qué archivo crear, qué interfaz implementar, qué cambia en <code>main.go</code>. Cada una asume que ya conoces el <em>por qué</em>; aquí solo está el <em>cómo</em>.{{else}}Once you've read the lessons and want to add your own piece, these guides give you the step-by-step — what file to create, which interface to implement, what changes in <code>main.go</code>. Each assumes you already know the <em>why</em>; this is just the <em>how</em>.{{end}}
+      </p>
+
+      <div class="recipes">
+        {{range .Guides}}
+        <a class="recipe" href="{{.URL}}">
+          <div class="recipe-head">
+            <span class="recipe-kicker">how-to</span>
+            <span class="recipe-arrow">→</span>
+          </div>
+          <div class="recipe-title">{{.Title}}</div>
+          {{if .Blurb}}<div class="recipe-blurb">{{.Blurb}}</div>{{end}}
+        </a>
+        {{end}}
+      </div>
+    </section>
+
+    {{if .Exercises}}
+    <section id="exercises">
+      <div class="section-head">
+        <span class="num">§04</span>
+        <span class="label">{{if eq .Lang "es"}}Ejercicios{{else}}Exercises{{end}}</span>
+        <span class="rule"></span>
+      </div>
+      <h2 class="section-title">{{if eq .Lang "es"}}Cinco extensiones para hacer tuyo el harness.{{else}}Five extensions to make the harness your own.{{end}}</h2>
+      <p class="section-body" style="margin-bottom: 24px">
+        {{if eq .Lang "es"}}Cada ejercicio es una tarea autocontenida que se apoya en los puntos de extensión existentes — Provider, Tool, Compaction, Memory, Subagente. No hay solución canónica; el valor está en las decisiones que tomes en el camino.{{else}}Each exercise is a self-contained task that builds on an existing extension point — Provider, Tool, Compaction, Memory, Subagent. There's no canonical solution; the value is in the trade-offs you make along the way.{{end}}
+      </p>
+
+      <div class="recipes">
+        {{range .Exercises}}
+        <a class="recipe exercise" href="{{.URL}}">
+          <div class="recipe-head">
+            <span class="recipe-kicker">§{{.Num}} · {{if eq $.Lang "es"}}ejercicio{{else}}exercise{{end}}</span>
+            {{if .Difficulty}}<span class="difficulty difficulty-{{.Difficulty}}">{{.Difficulty}}</span>{{else}}<span class="recipe-arrow">→</span>{{end}}
+          </div>
+          <div class="recipe-title">{{.Title}}</div>
+          {{if .Blurb}}<div class="recipe-blurb">{{.Blurb}}</div>{{end}}
+        </a>
+        {{end}}
+      </div>
+    </section>
+    {{end}}
+
+    <section id="quickstart">
+      <div class="section-head">
+        <span class="num">{{if .Exercises}}§05{{else}}§04{{end}}</span>
         <span class="label">Quickstart</span>
         <span class="rule"></span>
       </div>

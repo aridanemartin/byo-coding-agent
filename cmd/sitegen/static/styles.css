@@ -344,6 +344,93 @@ section:last-of-type { border-bottom: 0; }
   transition: transform 120ms;
 }
 
+/* ===== How-to recipes ===== */
+.recipes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 24px;
+}
+.recipe {
+  display: flex; flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 120ms, color 120ms, transform 120ms, box-shadow 120ms;
+}
+.recipe:hover {
+  background: var(--ink);
+  color: var(--bg);
+  transform: translate(-2px,-2px);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.recipe-head {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.recipe-kicker {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.recipe:hover .recipe-kicker { color: rgba(255,255,255,0.55); }
+.recipe-arrow {
+  font-size: 16px;
+  color: var(--muted);
+  transition: transform 120ms;
+}
+.recipe:hover .recipe-arrow {
+  color: var(--bg);
+  transform: translateX(4px);
+}
+.recipe-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.recipe-blurb {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.recipe:hover .recipe-blurb { color: rgba(255,255,255,0.7); }
+
+/* Difficulty badges — used on exercise cards and exercise headers. */
+.difficulty {
+  display: inline-block;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border: 1px solid var(--ink);
+  font-weight: 600;
+}
+.difficulty-easy   { background: #d7e4c5; color: #2a3a18; border-color: #2a3a18; }
+.difficulty-medium { background: var(--highlight); color: #4a3a00; border-color: #4a3a00; }
+.difficulty-hard   { background: #e8b4a0; color: #4a1a0a; border-color: #4a1a0a; }
+.difficulty-fácil  { background: #d7e4c5; color: #2a3a18; border-color: #2a3a18; }
+.difficulty-media  { background: var(--highlight); color: #4a3a00; border-color: #4a3a00; }
+.difficulty-difícil{ background: #e8b4a0; color: #4a1a0a; border-color: #4a1a0a; }
+.recipe:hover .difficulty {
+  background: var(--bg);
+  color: var(--ink);
+  border-color: var(--bg);
+}
+
+/* Lead paragraph on a guide page — sits between H1 and prose. */
+.chapter-blurb-lead {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: -4px 0 28px;
+  max-width: 720px;
+}
+
 /* ===== Snippet ===== */
 .snippet {
   background: var(--ink); color: var(--bg);
