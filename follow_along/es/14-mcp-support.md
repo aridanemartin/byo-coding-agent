@@ -25,6 +25,23 @@ El protocolo define:
 
 Para nuestro harness nos importan `tools/list` y `tools/call`. El resto es opcional.
 
+### "¿Necesito instalar o descargar algo?"
+
+Respuesta corta: **MCP, como protocolo, nunca obliga a descargar nada.** Es JSON-RPC agnóstico al transporte. Lo que necesitas depende del transporte:
+
+- **stdio (subproceso local).** El servidor es un programa en tu máquina. El cliente lo lanza con `exec` bajo demanda y le pasa JSON-RPC por stdin/stdout. Así que *algo* tiene que vivir en disco — pero ese "algo" puede llegar de la forma que prefieras:
+  - instalado de antemano (`pip install mcp-server-foo`, `npm install -g ...`, un binario que descargaste)
+  - obtenido perezosamente en la primera ejecución por un lanzador como `uvx` o `npx -y`, que luego lo cachea
+  - un script que escribiste tú en la carpeta del proyecto
+
+  El protocolo solo dice "ejecuta este comando y háblame". Que el comando implique una descarga o no es asunto entre tú y ese comando.
+
+- **HTTP / SSE / WebSocket (remoto).** El servidor corre *en otro sitio* — tu LAN, un servicio en la nube, el endpoint de un vendor. Te conectas a una URL, quizá con cabeceras de auth. Nada que instalar de tu lado; nada que lanzar. El servidor tiene que estar accesible cuando lo llames.
+
+Nada está "siempre corriendo". Los servidores stdio viven mientras dura la sesión (el cliente los lanza, el cliente los mata). Los remotos tienen que estar corriendo del otro lado, pero eso es problema de quien los opera.
+
+> Para la especificación del protocolo y un catálogo de servidores públicos, mira los docs oficiales en [modelcontextprotocol.io](https://modelcontextprotocol.io). La especificación está en [spec.modelcontextprotocol.io](https://spec.modelcontextprotocol.io).
+
 ## El encaje arquitectónico
 
 Observa nuestra interfaz `Tool` de nuevo:

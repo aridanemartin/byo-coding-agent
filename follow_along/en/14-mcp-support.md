@@ -25,6 +25,23 @@ The protocol defines:
 
 For our harness we care about `tools/list` and `tools/call`. The rest is optional.
 
+### "Do I need to install or download anything?"
+
+Short answer: **MCP the protocol never mandates a download.** It's transport-agnostic JSON-RPC. What you need depends on the transport:
+
+- **stdio (local subprocess).** The server is a program on your machine. The client `exec`s it on demand and pipes JSON-RPC over stdin/stdout. So *something* has to live on disk — but that "something" can arrive any way you like:
+  - installed ahead of time (`pip install mcp-server-foo`, `npm install -g ...`, a `wget`'d binary)
+  - fetched lazily on first run by a launcher like `uvx` or `npx -y`, which then caches it
+  - a script you wrote yourself in the project folder
+
+  The protocol just says "run this command and talk to me." Whether the command involves a download is between you and that command.
+
+- **HTTP / SSE / WebSocket (remote).** The server runs *somewhere else* — your LAN, a cloud service, a vendor's endpoint. You connect to a URL, possibly with auth headers. Nothing to install on your side; nothing to spawn. The server has to be reachable when you call it.
+
+Nothing is "always running." stdio servers live for the duration of the session (the client spawns them, the client kills them). Remote servers have to be running on the other end, but that's their operator's problem.
+
+> For the protocol spec and a catalog of public servers, see the official docs at [modelcontextprotocol.io](https://modelcontextprotocol.io). The spec itself is at [spec.modelcontextprotocol.io](https://spec.modelcontextprotocol.io).
+
 ## The architectural fit
 
 Look at our `Tool` interface again:
