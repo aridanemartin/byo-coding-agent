@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Build Your Own Coding Agent — A hands-on introduction to harness engineering</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{if eq .Lang "es"}}../{{end}}styles.css">
+</head>
+<body data-variant="blueprint">
+  <div class="frame">
+    <span class="corner-bl"></span>
+    <span class="corner-br"></span>
+
+    <header class="bar">
+      <div class="brand">
+        <span class="dot"></span>
+        <strong>build-your-own-coding-agent</strong>
+        <span style="color: var(--muted)">// v0.4.2</span>
+      </div>
+      <nav>
+        <a href="#why">{{if eq .Lang "es"}}por qué{{else}}why{{end}}</a>
+        <a href="#architecture">{{if eq .Lang "es"}}arquitectura{{else}}architecture{{end}}</a>
+        <a href="#curriculum">{{if eq .Lang "es"}}lecciones{{else}}lessons{{end}}</a>
+        <a href="#quickstart">{{if eq .Lang "es"}}quickstart{{else}}quickstart{{end}}</a>
+      </nav>
+      <div class="right">
+        <a class="lang-toggle" href="{{.OtherURL}}" title="switch language">[{{if eq .Lang "es"}}EN{{else}}ES{{end}}]</a>
+        <a class="repo" href="https://github.com/betta-tech/byo-coding-agent">★ github →</a>
+      </div>
+    </header>
+
+    <section class="hero" id="top">
+      <div class="meta-row">
+        <span>v0.4.2-alpha</span>
+        <span class="sep">/</span>
+        <span>MIT licensed</span>
+        <span class="sep">/</span>
+        <span>{{.Total}} {{if eq .Lang "es"}}lecciones · 4 capítulos{{else}}lessons · 4 chapters{{end}}</span>
+        <span class="sep">/</span>
+        <span>github.com/betta-tech/byo-coding-agent</span>
+      </div>
+      <h1 class="title">
+        {{if eq .Lang "es"}}Construye Tu Propio Agente de Código<em> — una introducción práctica a la ingeniería de harness</em>{{else}}Build Your Own Coding Agent<em> — a hands-on intro to harness engineering</em>{{end}}<span class="caret"></span>
+      </h1>
+      <p class="lede">
+        {{if eq .Lang "es"}}Los agentes de código modernos son <strong>mayormente harness</strong>, no modelo. Este repositorio te guía por cada capa de ese harness — wrappers de proveedor, presupuestos de contexto, memoria, herramientas, MCP, subagentes — como una secuencia de pequeñas lecciones con código ejecutable. Lee el markdown. Edita el código. Mira girar el bucle.{{else}}Modern coding agents are <strong>mostly harness</strong>, not model. This repo walks you through every layer of that harness — provider wrappers, context budgets, memory, tools, MCP, subagents — as a sequence of small lessons with runnable code. Read the markdown. Edit the source. Watch the loop turn.{{end}}
+      </p>
+      <div class="cta-row">
+        <a class="btn solid" href="#curriculum">
+          <span>{{if eq .Lang "es"}}leer las lecciones{{else}}read the lessons{{end}}</span><span class="arr">→</span>
+        </a>
+        <a class="btn" href="#quickstart">
+          <span>$ clone &amp; run</span>
+        </a>
+        <a class="btn" href="#architecture">
+          <span>{{if eq .Lang "es"}}ver el harness{{else}}see the harness{{end}}</span><span class="arr">↘</span>
+        </a>
+      </div>
+    </section>
+
+    <section id="why">
+      <div class="section-head">
+        <span class="num">§00</span>
+        <span class="label">{{if eq .Lang "es"}}¿Qué es la ingeniería de harness?{{else}}What is harness engineering?{{end}}</span>
+        <span class="rule"></span>
+      </div>
+      <h2 class="section-title">{{if eq .Lang "es"}}El modelo escribe el código.<br>El harness decide qué ve, qué recuerda y qué puede tocar.{{else}}The model writes the code.<br>The harness decides what it sees, remembers, and can touch.{{end}}</h2>
+      <p class="section-body">
+        {{if eq .Lang "es"}}Cambia el modelo en cualquier agente de código popular y la mayoría de su carácter se mantiene. La personalidad, los modos de fallo, la forma de recuperarse — todo eso vive en el harness: el bucle, los prompts, la superficie de herramientas, las reglas de presupuesto. La ingeniería de harness es la disciplina de diseñar ese andamiaje deliberadamente, no de copiarlo de un tutorial.{{else}}Swap the model in any popular coding agent and most of its character stays the same. The personality, the failure modes, the way it recovers — those live in the harness: the loop, the prompts, the tool surface, the budget rules. Harness engineering is the discipline of designing that scaffolding deliberately, instead of copying it from a tutorial.{{end}}
+      </p>
+      <div class="two-col" style="margin-top: 32px">
+        <div>
+          <h4>{{if eq .Lang "es"}}Lo que escribirás{{else}}You'll write{{end}}</h4>
+          <p>{{if eq .Lang "es"}}Un agente de código funcional en Go — streaming, uso de herramientas, edición de archivos, un cliente MCP, subagentes, prompt caching y una TUI real al final.{{else}}A working coding agent in Go — streaming, tool use, file edits, an MCP client, subagents, prompt caching, and a real TUI by the end.{{end}}</p>
+        </div>
+        <div>
+          <h4>{{if eq .Lang "es"}}Lo que no enviarás{{else}}You won't ship{{end}}</h4>
+          <p>{{if eq .Lang "es"}}Un sistema de producción. El objetivo es ver cada cable. Cambiamos robustez por legibilidad — cada archivo está pensado para leerse de principio a fin.{{else}}A production system. The point is to see every wire. We trade robustness for legibility — every file is meant to be read end-to-end.{{end}}</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <div class="section-head">
+        <span class="num">§01</span>
+        <span class="label">{{if eq .Lang "es"}}Anatomía del harness{{else}}Anatomy of the harness{{end}}</span>
+        <span class="rule"></span>
+      </div>
+      <h2 class="section-title">{{if eq .Lang "es"}}Un bucle, cuatro utilidades, dos canales de salida.{{else}}A loop, four utilities, two outgoing channels.{{end}}</h2>
+      <p class="section-body" style="margin-bottom: 28px">
+        {{if eq .Lang "es"}}Este es el sistema que construirás, pieza por pieza. Pasa el ratón sobre cualquier nodo para enfocarlo — cada caja se asocia con una lección, un archivo y unas pocas cientos de líneas de código.{{else}}This is the system you'll build, piece by piece. Hover any node to focus it — every box maps to a lesson, a file, and a few hundred lines of code.{{end}}
+      </p>
+
+      <div class="diagram-wrap">
+        <span class="legend">fig.01 · signal flow</span>
+        <div class="diagram">
+          <div class="node user">
+            <div class="k">input</div>
+            <div class="n">user / cli</div>
+          </div>
+          <div class="node provider">
+            <div class="k">§03</div>
+            <div class="n">provider wrapper</div>
+            <small>anthropic · openai · local</small>
+          </div>
+
+          <div class="node loop">
+            <div class="k">§01</div>
+            <div class="n">agent loop</div>
+            <small>prompt → call → tool → repeat</small>
+          </div>
+
+          <div class="node ctx">
+            <div class="k">§06–07</div>
+            <div class="n">context mgr</div>
+          </div>
+          <div class="node mem">
+            <div class="k">§19</div>
+            <div class="n">memory</div>
+          </div>
+          <div class="node tools">
+            <div class="k">§09</div>
+            <div class="n">tools</div>
+          </div>
+          <div class="node io">
+            <div class="k">i/o</div>
+            <div class="n">filesystem · shell</div>
+          </div>
+
+          <div class="node mcp">
+            <div class="k">§14</div>
+            <div class="n">MCP servers</div>
+            <small>fetch · search · custom</small>
+          </div>
+          <div class="node sub">
+            <div class="k">§11</div>
+            <div class="n">subagents</div>
+            <small>reviewer · planner</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="curriculum">
+      <div class="section-head">
+        <span class="num">§02</span>
+        <span class="label">{{if eq .Lang "es"}}Plan de estudios{{else}}Curriculum{{end}}</span>
+        <span class="rule"></span>
+      </div>
+      <h2 class="section-title">{{if eq .Lang "es"}}{{.Total}} lecciones, en cuatro capítulos.{{else}}{{.Total}} lessons, in four chapters.{{end}}</h2>
+      <p class="section-body" style="margin-bottom: 20px">
+        {{if eq .Lang "es"}}Cada lección es un archivo markdown en <code>/follow_along</code> que recorre una parte del harness que ya vive en el repo. El código es la versión final — las lecciones explican cómo se construyó cada pieza y por qué. Lee en orden para el tour completo, o salta al capítulo que necesites.{{else}}Each lesson is a markdown file in <code>/follow_along</code> that walks through one part of the harness already living in the repo. The code is the final version — the lessons explain how each piece was built and why. Read in order for the full tour, or jump to whichever chapter you need.{{end}}
+      </p>
+
+      <div class="chapters">
+        {{range .Groups}}
+        <div class="chapter">
+          <div class="chapter-head">
+            <div class="chapter-kicker">{{.Kicker}}</div>
+            <div class="chapter-title">{{.Title}}</div>
+            <div class="chapter-blurb">{{.Blurb}}</div>
+          </div>
+          <ul class="chapter-list">
+            {{range .Chapters}}
+            <li>
+              <a class="chapter-lesson" href="{{.URL}}">
+                <span class="cl-num">{{.Num}}</span>
+                <span class="cl-title">{{.Title}}</span>
+                <span class="cl-arrow">→</span>
+              </a>
+            </li>
+            {{end}}
+          </ul>
+        </div>
+        {{end}}
+      </div>
+    </section>
+
+    <section id="quickstart">
+      <div class="section-head">
+        <span class="num">§03</span>
+        <span class="label">Quickstart</span>
+        <span class="rule"></span>
+      </div>
+      <h2 class="section-title">{{if eq .Lang "es"}}Tres comandos. Una clave. Adelante.{{else}}Three commands. One key. Off you go.{{end}}</h2>
+      <div class="snippet" style="margin-top: 24px">
+        <div class="filebar">
+          <span>~/projects $ &nbsp;bash</span>
+          <span>byo-coding-agent · main</span>
+        </div>
+        <pre><span class="cm"># {{if eq .Lang "es"}}1. clona el repo{{else}}1. clone the repo{{end}}</span>
+<span class="kw">git</span> clone https://github.com/betta-tech/byo-coding-agent && <span class="kw">cd</span> byo-coding-agent
+
+<span class="cm"># {{if eq .Lang "es"}}2. pon una clave de proveedor (cualquiera vale){{else}}2. set a provider key (any will do){{end}}</span>
+<span class="kw">export</span> ANTHROPIC_API_KEY=<span class="st">"sk-ant-..."</span>
+
+<span class="cm"># {{if eq .Lang "es"}}3. corre el harness{{else}}3. run the harness{{end}}</span>
+<span class="kw">go</span> run .</pre>
+      </div>
+      <p class="section-body" style="margin-top: 20px; font-size: 12.5px">
+        {{if eq .Lang "es"}}¿Nuevo en la ingeniería de harness? Empieza en <a class="link" href="#why">§00 — qué y por qué</a>, después abre <a class="link" href="chapters/00-introduction.html">00-introduction</a> y avanza.{{else}}New to harness engineering? Start with <a class="link" href="#why">§00 — what and why</a>, then open <a class="link" href="chapters/00-introduction.html">00-introduction</a> and work forward.{{end}}
+      </p>
+    </section>
+
+    <footer>
+      <div>
+        <div>© build-your-own-coding-agent · MIT</div>
+        <div>maintained at github.com/betta-tech/byo-coding-agent</div>
+        <div class="built-by">Built with <span class="heart">&lt;3</span> by BettaTech</div>
+        <div class="academy">{{if eq .Lang "es"}}aprende más en{{else}}learn more at{{end}} <a href="https://www.commitacademy.io" target="_blank" rel="noopener">Commit Academy →</a></div>
+      </div>
+      <div class="ascii">  ┌─┐ ┌─┐ ┌─┐
+  │ │ │ │ │ │
+  └─┘ └─┘ └─┘
+  loop · tools · memory</div>
+    </footer>
+  </div>
+</body>
+</html>

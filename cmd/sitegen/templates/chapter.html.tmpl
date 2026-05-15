@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{.Title}} · Build Your Own Coding Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{if eq .Lang "es"}}../../{{else}}../{{end}}styles.css">
+</head>
+<body data-variant="blueprint">
+  <div class="frame">
+    <span class="corner-bl"></span>
+    <span class="corner-br"></span>
+
+    <header class="bar">
+      <div class="brand">
+        <span class="dot"></span>
+        <a href="{{.IndexURL}}" style="color: inherit"><strong>build-your-own-coding-agent</strong></a>
+        <span style="color: var(--muted)">// §{{.Num}}</span>
+      </div>
+      <nav>
+        <a href="{{.IndexURL}}#why">{{if eq .Lang "es"}}por qué{{else}}why{{end}}</a>
+        <a href="{{.IndexURL}}#architecture">{{if eq .Lang "es"}}arquitectura{{else}}architecture{{end}}</a>
+        <a href="{{.IndexURL}}#curriculum">{{if eq .Lang "es"}}lecciones{{else}}lessons{{end}}</a>
+        <a href="{{.IndexURL}}#quickstart">quickstart</a>
+      </nav>
+      <div class="right">
+        <a class="lang-toggle" href="{{.OtherURL}}" title="switch language">[{{if eq .Lang "es"}}EN{{else}}ES{{end}}]</a>
+        <a class="repo" href="https://github.com/betta-tech/byo-coding-agent">★ github →</a>
+      </div>
+    </header>
+
+    <article class="chapter-page">
+      <div class="chapter-meta">
+        <a class="back" href="{{.IndexURL}}">← {{if eq .Lang "es"}}volver al índice{{else}}back to index{{end}}</a>
+        <span class="sep">/</span>
+        <span class="chapter-num">§{{.Num}}</span>
+      </div>
+      <h1 class="chapter-h1">{{.Title}}</h1>
+      <div class="chapter-prose">
+        {{.Body}}
+      </div>
+
+      <nav class="chapter-nav">
+        {{if .PrevURL}}
+        <a class="nav-prev" href="{{.PrevURL}}">
+          <span class="nav-arrow">←</span>
+          <span class="nav-label">{{if eq .Lang "es"}}anterior{{else}}previous{{end}}</span>
+          <span class="nav-title">{{.PrevName}}</span>
+        </a>
+        {{else}}<span></span>{{end}}
+        {{if .NextURL}}
+        <a class="nav-next" href="{{.NextURL}}">
+          <span class="nav-label">{{if eq .Lang "es"}}siguiente{{else}}next{{end}}</span>
+          <span class="nav-title">{{.NextName}}</span>
+          <span class="nav-arrow">→</span>
+        </a>
+        {{else}}<span></span>{{end}}
+      </nav>
+    </article>
+
+    <footer>
+      <div>
+        <div>© build-your-own-coding-agent · MIT</div>
+        <div>maintained at github.com/betta-tech/byo-coding-agent</div>
+        <div class="built-by">Built with <span class="heart">&lt;3</span> by BettaTech</div>
+        <div class="academy">{{if eq .Lang "es"}}aprende más en{{else}}learn more at{{end}} <a href="https://www.commitacademy.io" target="_blank" rel="noopener">Commit Academy →</a></div>
+      </div>
+      <div class="ascii">  ┌─┐ ┌─┐ ┌─┐
+  │ │ │ │ │ │
+  └─┘ └─┘ └─┘
+  loop · tools · memory</div>
+    </footer>
+  </div>
+</body>
+</html>
