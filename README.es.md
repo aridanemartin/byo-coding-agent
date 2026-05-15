@@ -2,6 +2,8 @@
 
 [![ci](https://github.com/betta-tech/byo-coding-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/betta-tech/byo-coding-agent/actions/workflows/ci.yml)
 
+📖 **Lee el libro online:** [byoharness.dev/es](https://byoharness.dev/es/) · [byoharness.dev](https://byoharness.dev)
+
 🌐 **Idiomas:** [English](README.md) · **Español**
 
 Una introducción práctica a la **ingeniería de harness** — la disciplina de construir el andamiaje alrededor de un LLM que lo convierte en un agente útil. Vas a construir un agente de código funcional en Go, y luego experimentar con las partes que importan: proveedores, herramientas, estrategias de compactación y permisos.
