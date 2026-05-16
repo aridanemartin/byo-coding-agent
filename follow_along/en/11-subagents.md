@@ -1,5 +1,7 @@
 # 11 · Subagents
 
+By chapter 10 the harness has clean seams everywhere: provider (chapter 03), compaction (chapter 07), tools (chapter 09), and `internal/` packages giving each layer a home. What it still can't do is *delegate*. Every tool call lands back in the main conversation. Reading twenty files to answer one question pollutes the context with twenty tool-result blocks; the main loop never recovers focus. This chapter introduces the abstraction that fixes it.
+
 A subagent is a separate agent loop, spawned by the main agent, with its own context window and tool subset, that returns its final answer as a single tool result.
 
 Why bother:

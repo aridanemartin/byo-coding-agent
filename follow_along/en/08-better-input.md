@@ -134,4 +134,10 @@ In Bubble Tea mode, same idea — confirm runs another `tea.NewProgram`. By chap
 2. Read `internal/ui/input.go` and trace the up-arrow code path. The `bufferText` field stores what you were typing *before* you started navigating history, so pressing Down past the most-recent entry restores it. Surprisingly easy to miss.
 3. Replace `textinput` with `textarea` (also from `bubbles`) and figure out the multi-line keybindings. Specifically: how do you bind Shift-Enter to "insert newline" while plain Enter "submits"? (This is a real-world rabbit hole — some terminals can't distinguish the two.)
 
+## End of arc 2 — abstractions earn their keep
+
+Six chapters of abstractions: a `Provider` interface, a slash-command palette, an explicit conversation contract, three compaction strategies, a real input box. Each chapter solved one problem and added one seam. The harness now reads like a *system* instead of a script — and you can already swap the LLM, the compaction strategy, and the input layer without touching the rest.
+
+Arc 3 (chapters 09–12) is where those seams pay off. We turn the tool switch into a registry, move code into `internal/` packages, introduce subagents (each one is just another agent running through the same loop), and replace stdout-printing with a full Bubble Tea program. By the end the harness looks like a small Claude Code.
+
 Next: [09 · Plug-and-play tools](09-plug-and-play-tools.md).

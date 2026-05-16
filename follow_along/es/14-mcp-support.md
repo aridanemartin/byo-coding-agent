@@ -1,6 +1,6 @@
 # 14 · Agregando soporte de MCP
 
-El harness tiene su propia interfaz `Tool` — structs Go en `internal/tool/`, cada uno con un `Definition()` y un `Execute()`. Eso funcionó porque cada herramienta que queríamos era una operación local que podíamos escribir en Go.
+El registro de herramientas del capítulo 09 te deja soltar un archivo Go en `internal/tool/` y que el agente lo recoja automáticamente — `Definition()` más `Execute()`, registrado vía `init()`, listo. Eso funcionó porque cada herramienta que queríamos era una operación local que podíamos escribir en Go.
 
 **MCP — el Model Context Protocol** — es el estándar para herramientas que viven *fuera* de tu proceso. Un servidor MCP puede ser un servidor de operaciones de Git, un lector de Slack, una interfaz de consulta a base de datos, un montador de sistema de archivos, cualquier cosa que alguien más haya escrito y publicado. Agregar soporte de MCP significa permitir que el agente use esos servidores como si fueran herramientas locales.
 

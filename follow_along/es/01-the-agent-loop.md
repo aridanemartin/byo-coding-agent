@@ -1,8 +1,14 @@
 # 01 · El bucle del agente
 
-> **¿Quieres saltarte la explicación y verlo correr?** [`examples/minimal/main.go`](../../examples/minimal/main.go) es el agente entero en un archivo de ~130 líneas — sin abstracciones, sin TUI, solo el bucle y tres herramientas. Ejecútalo con `go run ./examples/minimal` y luego vuelve aquí para el porqué.
+## Antes de empezar
 
-Antes de empezar, déjame mostrate el bucle general de cualquier aplicación que use agentes de IA a modo de arnés:
+Dos cosas con las que tropieza todo el mundo en la primera lectura:
+
+1. **Los snippets de los capítulos 01–08 no coinciden línea a línea con `main.go`.** Muestran la *forma* del harness en ese punto de la construcción. El repo en HEAD tiene la misma lógica factorizada en paquetes `internal/`, con una interfaz `Tool`, una TUI con Bubble Tea y unas capas más — el capítulo 10 cubre la refactorización; los capítulos 03–09 introducen las piezas una por una. Si abres `main.go` al lado de este capítulo esperando un match uno a uno, te vas a perder. Sigue la *forma*, y mira los callouts "En el repo actual" al final de cada capítulo para ver dónde vive el código hoy.
+
+2. **Si quieres verlo correr antes de leer la prosa**, hazlo ahora: [`examples/minimal/main.go`](../../examples/minimal/main.go) es el agente entero en un archivo de ~130 líneas — sin abstracciones, sin TUI, solo el bucle y tres herramientas. Ejecútalo con `go run ./examples/minimal` y luego vuelve aquí para el porqué.
+
+Aquí está el bucle general de cualquier aplicación que use agentes de IA a modo de arnés:
 
 ```
 [tu entrada]
@@ -64,6 +70,56 @@ El bucle externo de nuestro harness es un REPL. El giro: "eval" significa "corre
 | Interno (bucle del agente) | Las elecciones del modelo | Mandar al modelo → si hay tool_use, ejecutar y agregar → repetir hasta terminar |
 
 Mismo esqueleto que un game loop. El bucle externo es un *tick de juego sobre tu entrada*; el interno es el *paso de actualización* (con el modelo+herramientas haciendo las veces de física+IA). Cuando leas "el bucle" en capítulos posteriores, el contexto te dirá cuál — en su mayoría es el bucle del agente, porque ahí vive el estado interesante.
+
+## El vocabulario, en un ejemplo
+
+El resto del capítulo — y los doce siguientes — se apoya en un puñado de términos de la API de Anthropic. Si no los has visto, aquí están todos en un round-trip.
+
+Mandamos:
+
+```json
+{
+  "model": "claude-opus-4-7",
+  "max_tokens": 8192,
+  "system": "Eres un asistente de programación.",
+  "tools": [
+    {"name": "read_file",
+     "description": "Lee un archivo en el path dado.",
+     "input_schema": {
+       "type": "object",
+       "properties": {"path": {"type": "string"}},
+       "required": ["path"]
+     }}
+  ],
+  "messages": [
+    {"role": "user", "content": "¿qué hay en main.go?"}
+  ]
+}
+```
+
+Recibimos:
+
+```json
+{
+  "content": [
+    {"type": "tool_use",
+     "id": "toolu_abc",
+     "name": "read_file",
+     "input": {"path": "main.go"}}
+  ],
+  "stop_reason": "tool_use"
+}
+```
+
+Ese es todo el vocabulario:
+
+- **`messages`** es la conversación hasta el momento. Seguimos agregando; la API no tiene estado y el cliente carga con todo (capítulo 06).
+- **`tools`** es la lista que el modelo puede llamar. Cada herramienta tiene un JSON Schema que describe sus entradas — JSON Schema es la forma estándar de tipar las entradas de herramientas de LLM.
+- **bloques de `content`** es lo que el modelo devuelve — o `text` que quiere decir, o `tool_use` pidiéndole al harness que ejecute algo.
+- **`stop_reason`** le dice al bucle si seguir (`tool_use` = ejecutar esas herramientas y volver a preguntar) o devolver al usuario (`end_turn` = imprimir y volver al REPL).
+- **`max_tokens`** limita el tamaño de la *salida*, en tokens (~4 caracteres de texto en inglés cada uno).
+
+Si has usado la API de OpenAI, la forma es casi idéntica — nombres distintos para la misma idea (`tool_calls` en lugar de `tool_use`, `finish_reason` en lugar de `stop_reason`). La interfaz de provider del capítulo 03 es donde tapamos esa diferencia.
 
 ## Qué pasa en un turno
 
@@ -140,6 +196,52 @@ Así que el bucle interno tiene exactamente dos salidas:
 - El modelo devuelve una tool call → ejecutar la herramienta, agregar el resultado, preguntar otra vez.
 
 Esa es la imagen conceptual completa. Todo lo que sigue en este capítulo es detalle a nivel de cables: cómo se ven en realidad la petición y la respuesta, qué herramientas exponemos y cómo estructurar el código Go.
+
+## Un turno, paso a paso
+
+Escribes `list the files here`. Esta es la secuencia exacta que corre — once pasos para una entrada del usuario, porque el modelo decide que necesita una herramienta primero:
+
+```
+1.  El REPL lee tu línea.
+
+2.  El REPL agrega a messages:
+      [{role: user, content: "list the files here"}]
+
+3.  El bucle del agente hace POST a api.anthropic.com/v1/messages con
+      {system, tools, messages}
+
+4.  Claude responde:
+      content:     [{type: tool_use, id: "toolu_01",
+                     name: "bash", input: {"command": "ls"}}]
+      stop_reason: "tool_use"
+
+5.  El bucle agrega el turno del asistente a messages y recorre su content:
+      - Ve un bloque tool_use.
+      - Imprime  [tool] bash {"command":"ls"}
+      - Pregunta: approve? [y/n]
+
+6.  Escribes y.
+
+7.  El harness corre  sh -c "ls" , captura stdout:
+      "main.go\nREADME.md\n..."
+
+8.  El bucle agrega un tool_result a messages:
+      {role: user, content: [{type: tool_result,
+                              tool_use_id: "toolu_01",
+                              content: "main.go\nREADME.md\n...",
+                              is_error: false}]}
+
+9.  stop_reason era tool_use → el bucle itera. POST a Claude otra vez.
+
+10. Claude responde:
+       content:     [{type: text, text: "Aquí están los archivos: ..."}]
+       stop_reason: "end_turn"
+
+11. El bucle recorre content → imprime el texto. stop_reason ≠ tool_use →
+    vuelve al REPL, espera tu siguiente línea.
+```
+
+Cada capítulo posterior es una capa encima de este trazado. La compactación (capítulo 07) recorta `messages` entre los pasos 2 y 3. Las políticas de permisos (capítulo 02) controlan el paso 6. Los subagentes (capítulo 11) reemplazan el paso 7 con un bucle de agente recursivo. Las herramientas MCP (capítulo 14) reemplazan el paso 7 con una llamada JSON-RPC a otro proceso. La forma del trazado no cambia — solo cambia lo que hace cada paso.
 
 ## El contrato con el modelo
 
@@ -273,8 +375,9 @@ Tres cosas que vale la pena señalar:
 
 ## Ahora prueba
 
-1. Corre el agente y pídele `list the files here`. Mira pasar volando los prints `[tool] bash ...`.
-2. Pídele `write a hello.txt with a haiku in it`. Dos tool calls en un turno — observa el bucle.
-3. Pídele `read the file /does/not/exist`. El modelo recibe un string de error y o te lo reporta o prueba un path distinto. Este es el contrato de "errores como tool results" en acción.
+1. **Instrumenta el bucle.** Abre [`examples/minimal/main.go`](../../examples/minimal/main.go) y añade un `log.Printf` antes de cada paso del trazado de arriba: justo antes de `client.Messages.New` (paso 3), después de recibir la respuesta (paso 4) imprimiendo `stop_reason` y los tipos de bloque, después de cada `executeTool` (paso 7), y justo antes de retornar al REPL (paso 11). Corre `go run ./examples/minimal`, pídele `list the files here`, y compara los logs con los 11 pasos. Bonus: imprime `len(messages)` en cada paso — verás exactamente cómo crece.
+2. Corre el agente y pídele `list the files here`. Mira pasar volando los prints `[tool] bash ...`.
+3. Pídele `write a hello.txt with a haiku in it`. Dos tool calls en un turno — observa el bucle.
+4. Pídele `read the file /does/not/exist`. El modelo recibe un string de error y o te lo reporta o prueba un path distinto. Este es el contrato de "errores como tool results" en acción.
 
 Siguiente: [02 · El control de permisos](02-the-permission-gate.md).

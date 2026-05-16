@@ -196,4 +196,10 @@ Concretamente:
 2. Fuerza una tarea de larga duración y observa el spinner. Después dispara un subagente — mira la línea del spinner actualizarse para incluir el nombre del subagente.
 3. Prueba reemplazar `tea.WithAltScreen()` con ninguna opción (así Bubble Tea renderiza inline). El manejo del cursor se pone más raro, pero puedes ver cómo la abstracción del alt-screen está haciendo trabajo por ti.
 
+## Fin del arco 3 — la arquitectura paga
+
+El harness está ya estructuralmente completo. Provider, herramientas, compactación, subagentes, TUI — cada capa tiene su costura, cada capa compone. Esa es la prueba de las abstracciones: nada del bucle del agente sabe si una herramienta es local o remota, si el modelo es de Anthropic o de OpenAI, si la UI es stdout o un programa Bubble Tea.
+
+El capítulo 13 cierra el libro principal con lo que dejamos fuera a propósito y hacia dónde llevarlo. Los capítulos 14–19 son *extras* que se enchufan encima de la arquitectura que has construido — servidores MCP como herramientas, contexto de proyecto vía `AGENTS.md`, el visor de tokens, prompt caching, aprobación con diff para escrituras y memoria persistente del agente. Cada uno es autocontenido — léelos cuando quieras la funcionalidad.
+
 Siguiente: [13 · Qué sigue](13-whats-next.md).

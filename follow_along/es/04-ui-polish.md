@@ -1,6 +1,8 @@
 # 04 · Pulido de la UI
 
-Un capítulo corto. Vamos a agregar un banner, hacer que sobreviva a terminales angostas, y agregar un spinner de carga. Nada de esto es load-bearing; el objetivo es aprender tres técnicas pequeñas que aparecen en todas partes en trabajo de CLI.
+Para el capítulo 03 el harness es un REPL que funciona: habla con Claude, corre tres herramientas, pregunta antes de operaciones destructivas y puede cambiar de proveedor LLM en una línea. Lo que no tiene es *textura*. El prompt es un simple `>`. No hay feedback mientras el modelo piensa — solo silencio y un cursor parpadeando durante dos a cinco segundos. Cambia el tamaño de la terminal a menos de 80 columnas y la salida se descuadra.
+
+Un capítulo corto, entonces. Vamos a agregar un banner, hacer que sobreviva a terminales angostas, y agregar un spinner de carga. Nada de esto es load-bearing; el objetivo es aprender tres técnicas pequeñas que aparecen en todas partes en trabajo de CLI.
 
 ## El banner
 

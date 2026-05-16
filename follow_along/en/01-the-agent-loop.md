@@ -1,6 +1,12 @@
 # 01 · The agent loop
 
-> **Want to skip the explanation and just see it run?** [`examples/minimal/main.go`](../../examples/minimal/main.go) is the entire agent in one ~130-line file — no abstractions, no TUI, just the loop and three tools. Run it with `go run ./examples/minimal` and then come back here for the why.
+## Before you start
+
+Two things that trip up everyone reading this for the first time:
+
+1. **The snippets in chapters 01–08 don't match `main.go` line-for-line.** They show the *shape* of the harness at that point in the build. The repo at HEAD has the same logic factored into `internal/` packages with a `Tool` interface, a Bubble Tea TUI, and a few more layers — chapter 10 covers the refactor; chapters 03–09 introduce the pieces one at a time. If you open `main.go` alongside this chapter expecting a one-to-one match, you'll spiral. Match the *shape*, then look at the "In the current repo" callouts at the end of each chapter to find where the code lives today.
+
+2. **If you want to see it run before reading the prose**, do that now: [`examples/minimal/main.go`](../../examples/minimal/main.go) is the entire agent in one ~130-line file — no abstractions, no TUI, just the loop and three tools. Run it with `go run ./examples/minimal` and then come back here for the why.
 
 The whole thing fits in one diagram:
 
@@ -64,6 +70,56 @@ Our harness's outer loop is a REPL. The twist: "eval" means "run the agent loop 
 | Inner (agent loop) | The model's choices | Send to model → if tool_use, execute and append → repeat until done |
 
 Same skeleton as a game loop. The outer loop is a *game tick on your input*; the inner loop is the *update step* (with model+tools standing in for physics+AI). When you read about "the loop" in later chapters, context tells you which one — mostly it's the agent loop, since that's where the interesting state lives.
+
+## The vocabulary, in one example
+
+The rest of this chapter — and the next twelve — leans on a handful of Anthropic-API terms. If you haven't met them, here they are in one round-trip.
+
+We send:
+
+```json
+{
+  "model": "claude-opus-4-7",
+  "max_tokens": 8192,
+  "system": "You are a coding assistant.",
+  "tools": [
+    {"name": "read_file",
+     "description": "Read a file at the given path.",
+     "input_schema": {
+       "type": "object",
+       "properties": {"path": {"type": "string"}},
+       "required": ["path"]
+     }}
+  ],
+  "messages": [
+    {"role": "user", "content": "what's in main.go?"}
+  ]
+}
+```
+
+We get back:
+
+```json
+{
+  "content": [
+    {"type": "tool_use",
+     "id": "toolu_abc",
+     "name": "read_file",
+     "input": {"path": "main.go"}}
+  ],
+  "stop_reason": "tool_use"
+}
+```
+
+That's the whole vocabulary:
+
+- **`messages`** is the conversation so far. We keep appending; the API is stateless and the client carries everything (chapter 06).
+- **`tools`** is the list the model can call. Each tool has a JSON Schema describing its inputs — JSON Schema is the standard way to type LLM tool inputs.
+- **`content` blocks** is what the model returns — either `text` it wants to say, or `tool_use` asking the harness to run something.
+- **`stop_reason`** tells the loop whether to keep going (`tool_use` = run those tools and ask again) or hand back to the user (`end_turn` = print and return to REPL).
+- **`max_tokens`** caps the *output* size, in tokens (~4 characters of English text each).
+
+If you've used the OpenAI API, the shape is almost identical — different names for the same idea (`tool_calls` instead of `tool_use`, `finish_reason` instead of `stop_reason`). The provider interface in chapter 03 is where we paper over the difference.
 
 ## What happens in one turn
 
@@ -140,6 +196,52 @@ So the inner loop has exactly two exits:
 - The model returns a tool call → run the tool, append the result, ask again.
 
 That's the entire conceptual picture. Everything that follows in this chapter is wire-level detail: what the request and response actually look like, which tools we expose, and how to structure the Go code.
+
+## A turn, step by step
+
+You type `list the files here`. Here's the exact sequence that runs — eleven steps for one user input, because the model decides it needs a tool first:
+
+```
+1.  REPL reads your line.
+
+2.  REPL appends to messages:
+      [{role: user, content: "list the files here"}]
+
+3.  Agent loop POSTs to api.anthropic.com/v1/messages with
+      {system, tools, messages}
+
+4.  Claude responds:
+      content:     [{type: tool_use, id: "toolu_01",
+                     name: "bash", input: {"command": "ls"}}]
+      stop_reason: "tool_use"
+
+5.  Loop appends the assistant turn to messages, walks its content:
+      - Sees one tool_use block.
+      - Prints  [tool] bash {"command":"ls"}
+      - Prompts: approve? [y/n]
+
+6.  You type y.
+
+7.  Harness runs  sh -c "ls" , captures stdout:
+      "main.go\nREADME.md\n..."
+
+8.  Loop appends a tool_result to messages:
+      {role: user, content: [{type: tool_result,
+                              tool_use_id: "toolu_01",
+                              content: "main.go\nREADME.md\n...",
+                              is_error: false}]}
+
+9.  stop_reason was tool_use → loop iterates. POST to Claude again.
+
+10. Claude responds:
+       content:     [{type: text, text: "Here are the files: ..."}]
+       stop_reason: "end_turn"
+
+11. Loop walks content → prints the text. stop_reason ≠ tool_use → return
+    to REPL, wait for your next line.
+```
+
+Every later chapter is a layer on top of this trace. Compaction (chapter 07) trims `messages` between steps 2 and 3. Permission policies (chapter 02) gate step 6. Subagents (chapter 11) replace step 7 with a recursive agent loop. MCP tools (chapter 14) replace step 7 with a JSON-RPC call to another process. The trace shape doesn't change — only what each step does.
 
 ## The contract with the model
 
@@ -273,8 +375,9 @@ Three things worth pointing out:
 
 ## Now try
 
-1. Run the agent and ask it `list the files here`. Watch the `[tool] bash ...` print fly by.
-2. Ask it `write a hello.txt with a haiku in it`. Two tool calls in one turn — observe the loop.
-3. Ask it `read the file /does/not/exist`. The model gets back an error string and either reports it back to you or tries a different path. This is the "errors as tool results" contract in action.
+1. **Instrument the loop.** Open [`examples/minimal/main.go`](../../examples/minimal/main.go) and add a `log.Printf` before each step of the trace above: right before `client.Messages.New` (step 3), after the response comes back (step 4) printing `stop_reason` and the block types, after each `executeTool` (step 7), and just before returning to the REPL (step 11). Run `go run ./examples/minimal`, ask `list the files here`, and compare the logs against the 11 steps. Bonus: print `len(messages)` at every step — you'll see exactly how it grows.
+2. Run the agent and ask it `list the files here`. Watch the `[tool] bash ...` print fly by.
+3. Ask it `write a hello.txt with a haiku in it`. Two tool calls in one turn — observe the loop.
+4. Ask it `read the file /does/not/exist`. The model gets back an error string and either reports it back to you or tries a different path. This is the "errors as tool results" contract in action.
 
 Next: [02 · The permission gate](02-the-permission-gate.md).

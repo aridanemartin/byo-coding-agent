@@ -1,6 +1,8 @@
 # 04 · UI polish
 
-A short chapter. We're going to add a banner, make it survive narrow terminals, and add a loading spinner. None of this is load-bearing; the goal is to learn three small techniques that come up everywhere in CLI work.
+By chapter 03 the harness is a working REPL: it talks to Claude, runs three tools, asks before destructive operations, and can swap LLM provider in one line. What it doesn't have is *texture*. The prompt is a bare `>`. There's no feedback while the model is thinking — just dead silence and a blinking cursor for two to five seconds. Resize your terminal narrower than 80 columns and the output mangles.
+
+A short chapter, then. We're going to add a banner, make it survive narrow terminals, and add a loading spinner. None of this is load-bearing; the goal is to learn three small techniques that come up everywhere in CLI work.
 
 ## The banner
 

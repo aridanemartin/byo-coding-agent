@@ -109,4 +109,10 @@ Un `policy.Decide(name, input) → allow | deny | ask` reemplazaría la llamada 
 2. Mismo prompt — pero deniega. Mira cómo el modelo maneja la denegación. ¿Te preguntó qué hacer, o simplemente paró?
 3. Abre `executeTool` y *quita* la llamada a `confirm` temporalmente. Prueba el prompt destructivo otra vez. Siente la diferencia.
 
+## Fin del arco 1 — el mínimo viable
+
+Tienes un agente que funciona. Dos capítulos dentro, el harness puede sostener una conversación con Claude, correr tres herramientas y preguntar antes de hacer algo destructivo. Todo el asunto son ~150 líneas de Go en un archivo y se siente como un juguete. Está bien — *es* un juguete. Lo que no es, es *extensible*.
+
+El próximo arco (capítulos 03–08) trata de ganarse el derecho a llamar a esto un *harness*: hacer el LLM intercambiable, la conversación manejable y la entrada usable. La forma se repite cada vez — una interfaz pequeña, una implementación por defecto, sitio para que otros se enchufen.
+
 Siguiente: [03 · La interfaz de proveedor](03-the-provider-interface.md).

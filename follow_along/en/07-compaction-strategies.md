@@ -1,8 +1,10 @@
 # 07 · Compaction strategies
 
+Chapter 06 made the API's statelessness explicit: every call ships the entire conversation. That's our problem now.
+
 Conversations grow. Each turn re-sends the whole history. By turn 30 you're paying real money to re-tokenize hours of past chat. By turn 100 you start running into the context window.
 
-This chapter is about handling that. Like providers, compaction is something you'd want to swap and experiment with, so it gets the same treatment: an interface, multiple implementations, one line in `main.go` to switch.
+This chapter is the first time we have to *throw information away* — every prior chapter only added. Like providers (chapter 03), compaction is something you'd want to swap and experiment with, so it gets the same treatment: an interface, multiple implementations, one line in `main.go` to switch.
 
 ## The interface
 

@@ -1,8 +1,10 @@
 # 07 · Estrategias de compactación
 
+El capítulo 06 dejó explícito que la API no tiene estado: cada llamada manda la conversación entera. Ese es nuestro problema ahora.
+
 Las conversaciones crecen. Cada turno re-manda la historia entera. Para el turno 30 estás pagando plata real para re-tokenizar horas de chat pasado. Para el turno 100 empiezas a chocar con la ventana de contexto.
 
-Este capítulo trata de manejar eso. Como los providers, la compactación es algo que vas a querer cambiar y experimentar, así que recibe el mismo tratamiento: una interfaz, múltiples implementaciones, una línea en `main.go` para cambiar.
+Este es el primer capítulo donde tenemos que *tirar información a la basura* — todos los capítulos anteriores solo añadían cosas. Como los providers (capítulo 03), la compactación es algo que vas a querer cambiar y experimentar, así que recibe el mismo tratamiento: una interfaz, múltiples implementaciones, una línea en `main.go` para cambiar.
 
 ## La interfaz
 

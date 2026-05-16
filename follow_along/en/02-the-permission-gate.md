@@ -109,4 +109,10 @@ A `policy.Decide(name, input) → allow | deny | ask` would replace the inline `
 2. Same prompt — but deny. Watch the model handle the denial. Did it ask you what to do, or just stop?
 3. Open `executeTool` and *remove* the `confirm` call temporarily. Try the destructive prompt again. Feel the difference.
 
+## End of arc 1 — the bare minimum
+
+You have a working agent. Two chapters in, the harness can hold a conversation with Claude, run three tools, and ask before doing anything destructive. The whole thing is ~150 lines of one-file Go and feels a lot like a toy. That's fine — it *is* a toy. What it isn't is *extensible*.
+
+The next arc (chapters 03–08) is about earning the right to call this a *harness*: making the LLM swappable, the conversation manageable, and the input usable. The shape repeats every time — small interface, a default implementation, room for others to plug in.
+
 Next: [03 · The provider interface](03-the-provider-interface.md).

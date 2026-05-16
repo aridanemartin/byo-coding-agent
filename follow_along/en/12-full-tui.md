@@ -196,4 +196,10 @@ Concretely:
 2. Force a long-running task and observe the spinner. Then trigger a subagent — watch the spinner line update to include the subagent name.
 3. Try replacing `tea.WithAltScreen()` with no option (so Bubble Tea renders inline). The cursor handling gets weirder, but you can see how the alt-screen abstraction is doing work for you.
 
+## End of arc 3 — architecture pays off
+
+The harness is now structurally complete. Provider, tools, compaction, subagents, TUI — every layer has its own seam, every layer composes. That's the test of the abstractions: nothing in the agent loop knows whether a tool is local or remote, whether the model is Anthropic or OpenAI, whether the UI is stdout or a Bubble Tea program.
+
+Chapter 13 wraps up the core book with what we deliberately skipped and where to take it. Chapters 14–19 are *extras* that drop in on top of the architecture you've built — MCP servers as tools, project context via `AGENTS.md`, the token viewer, prompt caching, diff approval for writes, and persistent agent memory. Each is self-contained — read them when you want the feature.
+
 Next: [13 · What's next](13-whats-next.md).
