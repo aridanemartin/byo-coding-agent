@@ -198,8 +198,8 @@ Concretamente:
 
 ## Fin del arco 3 — la arquitectura paga
 
-El harness está ya estructuralmente completo. Provider, herramientas, compactación, subagentes, TUI — cada capa tiene su costura, cada capa compone. Esa es la prueba de las abstracciones: nada del bucle del agente sabe si una herramienta es local o remota, si el modelo es de Anthropic o de OpenAI, si la UI es stdout o un programa Bubble Tea.
+El harness ya está estructuralmente completo. Provider, herramientas, compactación, subagentes, TUI — todas las capas tienen su costura y encajan limpiamente entre sí. Esa es la prueba de fuego de las abstracciones: al bucle del agente le da igual que una herramienta sea local o remota, que el modelo venga de Anthropic o de OpenAI, o que la UI imprima a stdout o pinte un programa Bubble Tea.
 
-El capítulo 13 cierra el libro principal con lo que dejamos fuera a propósito y hacia dónde llevarlo. Los capítulos 14–19 son *extras* que se enchufan encima de la arquitectura que has construido — servidores MCP como herramientas, contexto de proyecto vía `AGENTS.md`, el visor de tokens, prompt caching, aprobación con diff para escrituras y memoria persistente del agente. Cada uno es autocontenido — léelos cuando quieras la funcionalidad.
+El capítulo 13 cierra el libro principal con lo que dejamos fuera a propósito y por dónde seguir. Los capítulos 14–19 son *extras* que se enchufan encima de lo que has construido — servidores MCP como herramientas, contexto del proyecto vía `AGENTS.md`, el visor de tokens, prompt caching, aprobación con diff para las escrituras y memoria persistente del agente. Son independientes entre sí; léelos cuando te interese la funcionalidad correspondiente.
 
 Siguiente: [13 · Qué sigue](13-whats-next.md).

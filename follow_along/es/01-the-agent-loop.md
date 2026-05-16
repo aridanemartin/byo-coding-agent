@@ -2,11 +2,11 @@
 
 ## Antes de empezar
 
-Dos cosas con las que tropieza todo el mundo en la primera lectura:
+Dos cosas con las que tropieza casi todo el mundo la primera vez:
 
-1. **Los snippets de los capítulos 01–08 no coinciden línea a línea con `main.go`.** Muestran la *forma* del harness en ese punto de la construcción. El repo en HEAD tiene la misma lógica factorizada en paquetes `internal/`, con una interfaz `Tool`, una TUI con Bubble Tea y unas capas más — el capítulo 10 cubre la refactorización; los capítulos 03–09 introducen las piezas una por una. Si abres `main.go` al lado de este capítulo esperando un match uno a uno, te vas a perder. Sigue la *forma*, y mira los callouts "En el repo actual" al final de cada capítulo para ver dónde vive el código hoy.
+1. **Los snippets de los capítulos 01–08 no se corresponden línea a línea con `main.go`.** Muestran cómo se *veía* el harness en ese momento de la construcción. El repo en HEAD ya tiene la misma lógica repartida en paquetes `internal/`, con una interfaz `Tool`, una TUI hecha con Bubble Tea y algunas capas más — la refactorización llega en el capítulo 10; los capítulos 03–09 van metiendo las piezas. Si abres `main.go` esperando que cuadre exactamente con lo que estás leyendo, vas a acabar mareado. Quédate con la *forma*; al final de cada capítulo hay un callout "En el repo actual" que te indica dónde vive ese código hoy.
 
-2. **Si quieres verlo correr antes de leer la prosa**, hazlo ahora: [`examples/minimal/main.go`](../../examples/minimal/main.go) es el agente entero en un archivo de ~130 líneas — sin abstracciones, sin TUI, solo el bucle y tres herramientas. Ejecútalo con `go run ./examples/minimal` y luego vuelve aquí para el porqué.
+2. **Si prefieres verlo correr antes de leer la prosa**, hazlo ahora: [`examples/minimal/main.go`](../../examples/minimal/main.go) tiene el agente entero en unas 130 líneas — sin abstracciones, sin TUI, solo el bucle y tres herramientas. `go run ./examples/minimal` y luego vuelves aquí para el porqué.
 
 Aquí está el bucle general de cualquier aplicación que use agentes de IA a modo de arnés:
 
@@ -73,7 +73,7 @@ Mismo esqueleto que un game loop. El bucle externo es un *tick de juego sobre tu
 
 ## El vocabulario, en un ejemplo
 
-El resto del capítulo — y los doce siguientes — se apoya en un puñado de términos de la API de Anthropic. Si no los has visto, aquí están todos en un round-trip.
+El resto del capítulo — y los doce siguientes — se apoya en un puñado de términos de la API de Anthropic. Si nunca los has visto, aquí los tienes todos en una sola ida y vuelta.
 
 Mandamos:
 
@@ -113,13 +113,13 @@ Recibimos:
 
 Ese es todo el vocabulario:
 
-- **`messages`** es la conversación hasta el momento. Seguimos agregando; la API no tiene estado y el cliente carga con todo (capítulo 06).
-- **`tools`** es la lista que el modelo puede llamar. Cada herramienta tiene un JSON Schema que describe sus entradas — JSON Schema es la forma estándar de tipar las entradas de herramientas de LLM.
-- **bloques de `content`** es lo que el modelo devuelve — o `text` que quiere decir, o `tool_use` pidiéndole al harness que ejecute algo.
-- **`stop_reason`** le dice al bucle si seguir (`tool_use` = ejecutar esas herramientas y volver a preguntar) o devolver al usuario (`end_turn` = imprimir y volver al REPL).
-- **`max_tokens`** limita el tamaño de la *salida*, en tokens (~4 caracteres de texto en inglés cada uno).
+- **`messages`** es la conversación hasta ese momento. Vamos añadiéndole turnos; la API no guarda estado, así que el cliente arrastra el historial entero (capítulo 06).
+- **`tools`** es la lista de cosas que el modelo puede llamar. Cada herramienta lleva un JSON Schema describiendo sus entradas — JSON Schema es el formato estándar para tipar las entradas de las herramientas de un LLM.
+- **bloques de `content`** es lo que devuelve el modelo: `text` cuando tiene algo que decir, `tool_use` cuando quiere que el harness ejecute algo.
+- **`stop_reason`** le indica al bucle qué hacer a continuación: `tool_use` significa "ejecuta esas herramientas y vuélveme a preguntar"; `end_turn` significa "imprime y devuelve el control al usuario".
+- **`max_tokens`** pone un techo al tamaño de la *salida*, contado en tokens (~4 caracteres de texto en inglés por token).
 
-Si has usado la API de OpenAI, la forma es casi idéntica — nombres distintos para la misma idea (`tool_calls` en lugar de `tool_use`, `finish_reason` en lugar de `stop_reason`). La interfaz de provider del capítulo 03 es donde tapamos esa diferencia.
+Si has usado la API de OpenAI, la forma es prácticamente la misma — distintos nombres para la misma idea (`tool_calls` en lugar de `tool_use`, `finish_reason` en lugar de `stop_reason`). La interfaz de provider del capítulo 03 es donde tapamos esa diferencia.
 
 ## Qué pasa en un turno
 
@@ -241,7 +241,7 @@ Escribes `list the files here`. Esta es la secuencia exacta que corre — once p
     vuelve al REPL, espera tu siguiente línea.
 ```
 
-Cada capítulo posterior es una capa encima de este trazado. La compactación (capítulo 07) recorta `messages` entre los pasos 2 y 3. Las políticas de permisos (capítulo 02) controlan el paso 6. Los subagentes (capítulo 11) reemplazan el paso 7 con un bucle de agente recursivo. Las herramientas MCP (capítulo 14) reemplazan el paso 7 con una llamada JSON-RPC a otro proceso. La forma del trazado no cambia — solo cambia lo que hace cada paso.
+Cada capítulo posterior es una capa más sobre este trazado. La compactación (capítulo 07) recorta `messages` entre los pasos 2 y 3. Las políticas de permisos (capítulo 02) deciden qué pasa en el paso 6. Los subagentes (capítulo 11) cambian el paso 7 por un bucle de agente recursivo, y las herramientas MCP (capítulo 14) lo cambian por una llamada JSON-RPC a otro proceso. La forma del trazado no cambia — lo que cambia es lo que hace cada paso.
 
 ## El contrato con el modelo
 

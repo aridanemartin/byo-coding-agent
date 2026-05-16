@@ -136,8 +136,8 @@ En modo Bubble Tea, misma idea — confirm corre otro `tea.NewProgram`. Para el 
 
 ## Fin del arco 2 — las abstracciones se ganan su sitio
 
-Seis capítulos de abstracciones: una interfaz `Provider`, una paleta de slash commands, un contrato explícito de conversación, tres estrategias de compactación, una caja de entrada de verdad. Cada capítulo resolvió un problema y añadió una costura. Ahora el harness se lee como un *sistema* en lugar de como un script — y ya puedes cambiar el LLM, la estrategia de compactación y la capa de entrada sin tocar el resto.
+Seis capítulos de abstracciones: la interfaz `Provider`, la paleta de slash commands, el contrato explícito de conversación, las tres estrategias de compactación y una caja de entrada decente. Cada uno cerró un problema y añadió una costura. El harness ya se lee como un *sistema* y no como un script — puedes cambiar el LLM, la estrategia de compactación o la capa de entrada sin tocar el resto.
 
-El arco 3 (capítulos 09–12) es donde esas costuras pagan. Convertimos el switch de herramientas en un registro, movemos el código a paquetes `internal/`, introducimos subagentes (cada uno es solo otro agente corriendo el mismo bucle) y reemplazamos los prints a stdout con un programa Bubble Tea completo. Para cuando termines, el harness se parece a un Claude Code pequeño.
+En el arco 3 (capítulos 09–12) esas costuras empiezan a rendir. Convertimos el switch de herramientas en un registro, repartimos el código por paquetes `internal/`, introducimos los subagentes (otro agente más, recorriendo el mismo bucle) y dejamos atrás los prints a stdout para meterlo todo dentro de un programa Bubble Tea. Para cuando termines, el harness se parece a un Claude Code en pequeño.
 
 Siguiente: [09 · Herramientas plug-and-play](09-plug-and-play-tools.md).

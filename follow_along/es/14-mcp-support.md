@@ -1,6 +1,6 @@
 # 14 · Agregando soporte de MCP
 
-El registro de herramientas del capítulo 09 te deja soltar un archivo Go en `internal/tool/` y que el agente lo recoja automáticamente — `Definition()` más `Execute()`, registrado vía `init()`, listo. Eso funcionó porque cada herramienta que queríamos era una operación local que podíamos escribir en Go.
+El registro de herramientas del capítulo 09 te permite soltar un archivo Go en `internal/tool/` y que el agente lo recoja solo — un `Definition()`, un `Execute()`, un `init()` para registrarse y listo. Eso bastó mientras todas las herramientas que necesitábamos fueran operaciones locales que pudiéramos escribir en Go.
 
 **MCP — el Model Context Protocol** — es el estándar para herramientas que viven *fuera* de tu proceso. Un servidor MCP puede ser un servidor de operaciones de Git, un lector de Slack, una interfaz de consulta a base de datos, un montador de sistema de archivos, cualquier cosa que alguien más haya escrito y publicado. Agregar soporte de MCP significa permitir que el agente use esos servidores como si fueran herramientas locales.
 
@@ -38,7 +38,7 @@ Respuesta corta: **MCP, como protocolo, nunca obliga a descargar nada.** Es JSON
 
 - **HTTP / SSE / WebSocket (remoto).** El servidor corre *en otro sitio* — tu LAN, un servicio en la nube, el endpoint de un vendor. Te conectas a una URL, quizá con cabeceras de auth. Nada que instalar de tu lado; nada que lanzar. El servidor tiene que estar accesible cuando lo llames.
 
-Nada está "siempre corriendo". Los servidores stdio viven mientras dura la sesión (el cliente los lanza, el cliente los mata). Los remotos tienen que estar corriendo del otro lado, pero eso es problema de quien los opera.
+Nada está "siempre corriendo". Los servidores stdio viven lo que dura la sesión — el cliente los arranca al inicio y los termina al salir. Los remotos sí tienen que estar funcionando del otro lado, pero eso es problema de quien los opera.
 
 > Para la especificación del protocolo y un catálogo de servidores públicos, mira los docs oficiales en [modelcontextprotocol.io](https://modelcontextprotocol.io). La especificación está en [spec.modelcontextprotocol.io](https://spec.modelcontextprotocol.io).
 

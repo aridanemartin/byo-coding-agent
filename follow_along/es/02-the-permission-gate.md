@@ -111,8 +111,8 @@ Un `policy.Decide(name, input) → allow | deny | ask` reemplazaría la llamada 
 
 ## Fin del arco 1 — el mínimo viable
 
-Tienes un agente que funciona. Dos capítulos dentro, el harness puede sostener una conversación con Claude, correr tres herramientas y preguntar antes de hacer algo destructivo. Todo el asunto son ~150 líneas de Go en un archivo y se siente como un juguete. Está bien — *es* un juguete. Lo que no es, es *extensible*.
+Tienes un agente que funciona. En estos dos capítulos el harness ha aprendido a sostener una conversación con Claude, correr tres herramientas y pedir permiso antes de tocar nada peligroso. Son unas 150 líneas de Go en un solo archivo y, francamente, se parece más a un juguete que a una herramienta. No pasa nada — *es* un juguete. Lo que le falta es ser *extensible*.
 
-El próximo arco (capítulos 03–08) trata de ganarse el derecho a llamar a esto un *harness*: hacer el LLM intercambiable, la conversación manejable y la entrada usable. La forma se repite cada vez — una interfaz pequeña, una implementación por defecto, sitio para que otros se enchufen.
+El próximo arco (capítulos 03–08) va de ganarse el derecho a llamar a esto un *harness* de verdad: que el LLM se pueda cambiar, que la conversación se pueda gestionar, que la entrada se sienta humana. La receta se repite — una interfaz pequeña, una implementación por defecto y un hueco para que otros conecten lo suyo.
 
 Siguiente: [03 · La interfaz de proveedor](03-the-provider-interface.md).

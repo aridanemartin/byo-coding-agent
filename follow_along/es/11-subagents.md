@@ -1,6 +1,6 @@
 # 11 · Subagentes
 
-Para el capítulo 10 el harness tiene costuras limpias por todas partes: provider (capítulo 03), compactación (capítulo 07), herramientas (capítulo 09) y paquetes `internal/` dándole un lugar a cada capa. Lo que todavía no puede hacer es *delegar*. Cada llamada a herramienta cae de vuelta en la conversación principal. Leer veinte archivos para responder una pregunta contamina el contexto con veinte bloques tool-result; el bucle principal nunca recupera el foco. Este capítulo introduce la abstracción que lo arregla.
+Llegados al capítulo 10, el harness tiene costuras limpias por todos lados: el provider (capítulo 03), la compactación (capítulo 07), las herramientas (capítulo 09) y los paquetes `internal/` que le dan un sitio a cada capa. Pero todavía no sabe *delegar*. Toda llamada a herramienta acaba volviendo a la conversación principal. Leer veinte archivos para responder a una sola pregunta llena el contexto con veinte bloques tool-result y el bucle principal ya no recupera el hilo. Este capítulo introduce la abstracción que lo soluciona.
 
 Un subagente es un bucle de agente separado, lanzado por el agente principal, con su propia ventana de contexto y subconjunto de herramientas, que devuelve su respuesta final como un único tool result.
 
