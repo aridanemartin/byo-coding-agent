@@ -15,6 +15,9 @@ mcp.json
 # Generated static site (cmd/sitegen output). CI rebuilds and deploys it.
 site/
 
+# Node
+node_modules/
+
 # Editor / IDE
 .idea/
 .vscode/

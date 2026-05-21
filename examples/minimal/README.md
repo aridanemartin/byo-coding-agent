@@ -1,6 +1,6 @@
 # minimal — the bare-bones coding agent
 
-A single-file (`main.go`, ~130 lines counting comments) version of the
+A single-file (`index.ts`, ~130 lines counting comments) TypeScript version of the
 coding agent that follow_along [chapter 01](../../follow_along/en/01-the-agent-loop.md)
 walks you through. The inner agent loop, the outer REPL, three tools
 dispatched by a switch — that's it.
@@ -9,13 +9,15 @@ dispatched by a switch — that's it.
 
 ```sh
 export ANTHROPIC_API_KEY=sk-ant-...
-go run ./examples/minimal
+cd examples/minimal
+npm install
+npx tsx index.ts
 ```
 
 Type at the `>` prompt. Some things to try:
 
 - `list the files here` — exercises the `bash` tool
-- `read main.go and tell me what it does` — exercises `read_file`
+- `read index.ts and tell me what it does` — exercises `read_file`
 - `write a hello.txt with a haiku in it` — exercises `write_file`
 
 `ctrl-D` quits.
